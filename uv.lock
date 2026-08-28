@@ -1,0 +1,22 @@
+version = 1
+revision = 3
+requires-python = ">=3.13"
+
+[[package]]
+name = "panda3d"
+version = "1.11.0"
+source = { path = "panda3d-1.11.0-cp313-cp313-win_amd64.whl" }
+wheels = [
+    { filename = "panda3d-1.11.0-cp313-cp313-win_amd64.whl", hash = "sha256:dc84b3261675ffdb0106f272aab090f1f07d0c4eeb5ffdda011645406ab79305" },
+]
+
+[[package]]
+name = "test-ma"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "panda3d" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "panda3d", path = "panda3d-1.11.0-cp313-cp313-win_amd64.whl" }]

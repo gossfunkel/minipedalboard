@@ -1,0 +1,10 @@
+[project]
+name = "test-ma"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "panda3d",
+]
+
+[tool.uv.sources]
+panda3d = { path = "panda3d-1.11.0-cp313-cp313-win_amd64.whl" }
