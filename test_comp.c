@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define CHANNELS 2
@@ -49,15 +50,23 @@ int main() {
     bool shouldClose = false;
     char inLine[64];
 
-    printf("Initialised. Type 'toggle' to dis/enable the compressor node. Type 'EXIT' to quit.\n");
+    printf("Initialised. Type '?' for commands.\n");
 
     while (!shouldClose) {
         fflush(stdin);
+        printf("> ");
         fgets(inLine, sizeof inLine, stdin);
+        if (strchr(inLine, '?') == inLine) {
+            printf("==== Node Tester application.\n-- Compressor node\n");
+            printf("\t'toggle' - bypass compressor node\n");
+            printf("\t'drywet [x]' - set compressor dry/wet to x (floating point value)\n");
+            printf("\t'EXIT' - close the application\n");
+            printf("==========\n");
+        }
         if (strstr(inLine,"toggle") == inLine) {
             if (comp_bypassed) {
                 printf("Enabling compressor node...\n");
-                if (ma_node_attach_output_bus(&comp_node, 0, ma_node_graph_get_endpoint(&engine.nodeGraph), 0) != MA_SUCCESS) {
+                if (ma_node_attach_output_bus(&sound, 0, &comp_node, 0) != MA_SUCCESS) {
                     fprintf(stderr, "Failed to toggle comp node connection!\n");
                     return 6;
                 }
@@ -71,6 +80,10 @@ int main() {
                 printf("Compressor node disabled.\n");
             }
             comp_bypassed = !comp_bypassed;
+        }
+        if (strstr(inLine, "drywet") == inLine) {
+            float inVal = atof(inLine + 7);
+            p3d_compress_set_wet_dry(&comp_node.compress, inVal);
         }
         if (strstr(inLine,"EXIT\n") == inLine) {
             printf("Shutting down...\n");
