@@ -3,11 +3,16 @@
 #define MIN_RATIO 1
 #define MAX_RATIO 100
 
+#define MAX_ATTACK 1.f
+#define MAX_RELEASE 2.f
+
 typedef struct {
     ma_uint32 channels;
     ma_uint32 sampleRate;
     float threshold;
     float ratio;
+    float attack;
+    float release;
     float wetDry;
 } p3d_compress_config;
 
@@ -18,6 +23,8 @@ typedef struct {
 
 typedef struct {
     p3d_compress_config config;
+    float onTime;
+    float offTime;
 } p3d_compress;
 
 typedef struct {
@@ -29,7 +36,9 @@ p3d_compress_config p3d_compress_config_init(
     ma_uint32 channels, 
     ma_uint32 sampleRate, 
     float threshold, 
-    float ratio, 
+    float ratio,
+    float attack,
+    float release,
     float wetDry
 );
 ma_result p3d_compress_init(
@@ -50,6 +59,8 @@ p3d_compress_node_config p3d_compress_node_config_init(
     ma_uint32 sampleRate,
     float threshold,
     float ratio,
+    float attack,
+    float release,
     float wetDry
 );
 ma_result p3d_compress_node_init(

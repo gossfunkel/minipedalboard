@@ -26,7 +26,7 @@ int main() {
         return 2;
     }
 
-    p3d_compress_node_config comp_conf = p3d_compress_node_config_init(CHANNELS, SAMPLERATE, .5f, 4.f, 1.f);
+    p3d_compress_node_config comp_conf = p3d_compress_node_config_init(CHANNELS, SAMPLERATE, .5f, 4.f, .01f, .02f, 1.f);
 
     if ((result = p3d_compress_node_init(&engine.nodeGraph, &comp_conf, NULL, &comp_node)) != MA_SUCCESS) {
         fprintf(stderr, "Failed to initialise compressor node! Error: %d\n", result);

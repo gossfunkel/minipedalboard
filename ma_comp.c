@@ -28,6 +28,8 @@ ma_result p3d_compress_init(const p3d_compress_config *pConfig, const ma_allocat
 
 void p3d_compress_uninit(p3d_compress *pCompress, const ma_allocation_callbacks *pAllocationCallbacks) {
     if (pCompress == NULL) return;
+    pCompress->onTime = 0.f;
+    pCompress->offTime = MAX_RELEASE;
 }
 
 ma_result p3d_compress_process_pcm_frames(p3d_compress *pCompress, void *pFramesOut, const void *pFramesIn, ma_uint32 frameCount) {
@@ -43,18 +45,43 @@ ma_result p3d_compress_process_pcm_frames(p3d_compress *pCompress, void *pFrames
 
     float threshold = pCompress->config.threshold;
     float ratio = pCompress->config.ratio;
+    float attack = pCompress->config.attack;
+    float release = pCompress->config.release;
+    float comp;
+    float spf = 1.f/pCompress->config.sampleRate;
 
     while (iFrame < channels * frameCount)
         for (ma_uint32 iChannel = 0; iChannel < channels; iChannel++) {
-            pFramesOutF32[iFrame] = (fmin(threshold, pFramesInF32[iFrame]) + 
-                                    (fmax(pFramesInF32[iFrame], threshold) - threshold) / ratio) * wetDry 
-                                    + pFramesInF32[iFrame] * dryWet;
+            if (pFramesInF32[iFrame] > threshold) {
+                pCompress->onTime += spf;
+                pCompress->offTime = release;
+            } else {
+                // reset timers on first release frame
+                if (pCompress->onTime != 0.f) {
+                    pCompress->offTime = 0.f;
+                    pCompress->onTime = 0.f;
+                }
+                pCompress->offTime += spf;
+            }
+            comp = 1.f / 
+                (1.f + (ratio - 1.f) * fmin(pCompress->onTime/attack, 1.f) 
+                     + (ratio - 1.f) * fmax(0.f, 1.f - pCompress->offTime/release)
+                );
+            pFramesOutF32[iFrame] = wetDry * pFramesInF32[iFrame] * comp
+                                  + dryWet * pFramesInF32[iFrame];
             iFrame += 1;
         }
     return MA_SUCCESS;
 }
 
-p3d_compress_config p3d_compress_config_init(ma_uint32 channels, ma_uint32 sampleRate, float threshold, float ratio, float wetDry) {
+p3d_compress_config p3d_compress_config_init(
+        ma_uint32 channels, 
+        ma_uint32 sampleRate, 
+        float threshold,
+        float ratio,
+        float attack,
+        float release,
+        float wetDry) {
     p3d_compress_config config;
 
     memset(&config, 0, sizeof config);
@@ -62,6 +89,8 @@ p3d_compress_config p3d_compress_config_init(ma_uint32 channels, ma_uint32 sampl
     config.sampleRate = sampleRate;
     config.threshold = threshold;
     config.ratio = ratio;
+    config.attack = attack;
+    config.release = release;
     config.wetDry = wetDry;
 
     return config;
@@ -69,11 +98,20 @@ p3d_compress_config p3d_compress_config_init(ma_uint32 channels, ma_uint32 sampl
 
 // TODO attack/decay
 
-p3d_compress_node_config p3d_compress_node_config_init(ma_uint32 channels, ma_uint32 sampleRate, float threshold, float ratio, float wetDry) {
+p3d_compress_node_config p3d_compress_node_config_init(
+        ma_uint32 channels, 
+        ma_uint32 sampleRate, 
+        float threshold,
+        float ratio,
+        float attack,
+        float release,
+        float wetDry) {
     p3d_compress_node_config config;
 
     config.nodeConfig = ma_node_config_init();
-    config.compress = p3d_compress_config_init(channels, sampleRate, threshold, ratio, wetDry);
+    config.compress = p3d_compress_config_init(
+        channels, sampleRate, threshold, ratio, attack, release, wetDry
+    );
 
     return config;
 }
@@ -140,6 +178,25 @@ void p3d_compress_set_ratio(p3d_compress *pCompress, float value) {
 float p3d_compress_get_ratio(const p3d_compress *pCompress) {
     return pCompress->config.ratio;
 }
+
+void p3d_compress_set_attack(p3d_compress *pCompress, float value) {
+    if (value < 0.f || value > MAX_ATTACK) return;
+    pCompress->config.attack = value;
+}
+
+float p3d_compress_get_attack(const p3d_compress *pCompress) {
+    return pCompress->config.attack;
+}
+
+void p3d_compress_set_release(p3d_compress *pCompress, float value) {
+    if (value < 0.f || value > MAX_RELEASE) return;
+    pCompress->config.release = value;
+}
+
+float p3d_compress_get_release(const p3d_compress *pCompress) {
+    return pCompress->config.release;
+}
+
 void p3d_compress_set_wet_dry(p3d_compress *pCompress, float value) {
     if (value > 1.f || value < 0.f) return;
     pCompress->config.wetDry = value;
