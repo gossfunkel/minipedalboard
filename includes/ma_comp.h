@@ -26,8 +26,8 @@ typedef struct {
     float onTime;
     float offTime;
     ma_uint32 bufferSizeInFrames;
-    ma_uint32 cursor;
-    float *pBuffer;
+    //ma_uint32 cursor;
+    //float *pBuffer;
 } p3d_compress;
 
 typedef struct {
