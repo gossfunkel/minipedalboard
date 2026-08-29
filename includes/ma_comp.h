@@ -25,6 +25,9 @@ typedef struct {
     p3d_compress_config config;
     float onTime;
     float offTime;
+    ma_uint32 bufferSizeInFrames;
+    ma_uint32 cursor;
+    float *pBuffer;
 } p3d_compress;
 
 typedef struct {

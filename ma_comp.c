@@ -21,6 +21,12 @@ ma_result p3d_compress_init(const p3d_compress_config *pConfig, const ma_allocat
         if (pConfig->wetDry < 0.f || pConfig->wetDry > 1.f) return MA_INVALID_ARGS;
 
         pCompress->config = *pConfig;
+        pCompress->bufferSizeInFrames = pConfig->sampleRate/20;
+        pCompress->cursor = 0;
+        pCompress->pBuffer = (float *)ma_malloc((size_t)(pCompress->bufferSizeInFrames 
+                                                * ma_get_bytes_per_frame(ma_format_f32, pConfig->channels)), 
+                                                pAllocationCallbacks);
+        if (pCompress->pBuffer == NULL) return MA_OUT_OF_MEMORY;
     //}
 
     return MA_SUCCESS;
@@ -52,7 +58,33 @@ ma_result p3d_compress_process_pcm_frames(p3d_compress *pCompress, void *pFrames
 
     while (iFrame < channels * frameCount)
         for (ma_uint32 iChannel = 0; iChannel < channels; iChannel++) {
-            if (pFramesInF32[iFrame] > threshold) {
+            pCompress->pBuffer[pCompress->cursor] = pFramesInF32[iFrame];
+            // maybe need to set engineConfig->periodSizeInFrames to fit window size?
+            if (++pCompress->cursor == pCompress->bufferSizeInFrames) {
+                float peakVal = 0.f;
+                for (ma_uint32 bFrame = 0; bFrame < pCompress->bufferSizeInFrames; bFrame++)
+                    if (pCompress->pBuffer[bFrame] > peakVal) peakVal = pCompress->pBuffer[bFrame];
+                
+                for (ma_uint32 frame = iFrame - pCompress->bufferSizeInFrames; frame < iFrame; frame++) {
+                    if (peakVal > threshold) {
+                        pCompress->onTime += spf;
+                        pCompress->offTime = release;
+                    } else {
+                        // reset timers on first release frame
+                        if (pCompress->onTime != 0.f) {
+                            pCompress->offTime = 0.f;
+                            pCompress->onTime = 0.f;
+                        }
+                        pCompress->offTime += spf;
+                    }
+                    comp = 1.f + (ratio - 1.f) * fmin(pCompress->onTime/attack, 1.f) 
+                         + (ratio - 1.f) * fmax(0.f, 1.f - pCompress->offTime/release);
+                    pFramesOutF32[frame] = dryWet * pFramesInF32[frame] +
+                                           wetDry * pFramesInF32[frame] / comp;
+                }
+            }
+
+            /*if (pFramesInF32[iFrame] > threshold) {
                 pCompress->onTime += spf;
                 pCompress->offTime = release;
             } else {
@@ -63,12 +95,10 @@ ma_result p3d_compress_process_pcm_frames(p3d_compress *pCompress, void *pFrames
                 }
                 pCompress->offTime += spf;
             }
-            comp = 1.f / 
-                (1.f + (ratio - 1.f) * fmin(pCompress->onTime/attack, 1.f) 
-                     + (ratio - 1.f) * fmax(0.f, 1.f - pCompress->offTime/release)
-                );
-            pFramesOutF32[iFrame] = wetDry * pFramesInF32[iFrame] * comp
-                                  + dryWet * pFramesInF32[iFrame];
+            comp = 1.f + (ratio - 1.f) * fmin(pCompress->onTime/attack, 1.f) 
+                     + (ratio - 1.f) * fmax(0.f, 1.f - pCompress->offTime/release);
+            pFramesOutF32[iFrame] = dryWet * pFramesInF32[iFrame] +
+                                    wetDry * pFramesInF32[iFrame] / comp;*/
             iFrame += 1;
         }
     return MA_SUCCESS;
