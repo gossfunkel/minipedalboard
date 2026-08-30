@@ -26,9 +26,13 @@ int main() {
         return 2;
     }
 
-    p3d_distort_node_config dist_conf = p3d_distort_node_config_init(CHANNELS, SAMPLERATE, 10.f, 1.f);
+    p3d_distort_node_config dist_conf = p3d_distort_node_config_init(CHANNELS, SAMPLERATE, 10.f, 0.f, 1.f);
 
     if ((result = p3d_distort_node_init(&engine.nodeGraph, &dist_conf, NULL, &dist_node)) != MA_SUCCESS) {
+        if (result == MA_INVALID_ARGS) {
+            fprintf(stderr, "Distortion node initialised with incorrect values!\n");
+            return 3;
+        }
         fprintf(stderr, "Failed to initialise distortion node! Error: %d\n", result);
         return 3;
     }
@@ -61,6 +65,7 @@ int main() {
             printf("\t'toggle' - bypass node\n");
             printf("\t'drywet [x]' - set dry/wet to x (floating point value in range 0.0 - 1.0)\n");
             printf("\t'drive [x]' - set drive to x (floating point value in range %f - %f)\n", MIN_DRIVE, MAX_DRIVE);
+            printf("\t'bias [x]' - set bias to x (floating point value in range -%f - %f)\n", LIM_BIAS, LIM_BIAS);
             printf("\t'EXIT' - close the application\n");
             printf("==========\n");
         } else if (strstr(inLine,"toggle") == inLine) {
@@ -88,6 +93,10 @@ int main() {
             float inVal = atof(inLine + 6);
             p3d_distort_set_drive(&dist_node.distort, inVal);
             printf("Drive is now: %f\n", p3d_distort_get_drive(&dist_node.distort));
+        } else if (strstr(inLine, "bias") == inLine) {
+            float inVal = atof(inLine + 5);
+            p3d_distort_set_bias(&dist_node.distort, inVal);
+            printf("Bias is now: %f\n", p3d_distort_get_bias(&dist_node.distort));
         } else if (strstr(inLine,"EXIT\n") == inLine) {
             printf("Shutting down...\n");
             shouldClose = true;

@@ -2,11 +2,13 @@
 
 #define MIN_DRIVE 0.f
 #define MAX_DRIVE 100.f
+#define LIM_BIAS 3.f
 
 typedef struct {
     ma_uint32 channels;
     ma_uint32 sampleRate;
     float drive;
+    float bias;
     float wetDry;
 } p3d_distort_config;
 
@@ -28,6 +30,7 @@ p3d_distort_config p3d_distort_config_init(
     ma_uint32 channels, 
     ma_uint32 sampleRate, 
     float drive,
+    float bias,
     float wetDry
 );
 ma_result p3d_distort_init(
@@ -47,6 +50,7 @@ p3d_distort_node_config p3d_distort_node_config_init(
     ma_uint32 channels,
     ma_uint32 sampleRate,
     float drive,
+    float bias,
     float wetDry
 );
 ma_result p3d_distort_node_init(
@@ -66,6 +70,8 @@ void p3d_distort_node_process_pcm_frames(
 
 void p3d_distort_set_drive(p3d_distort *pDistort, float value);
 float p3d_distort_get_drive(const p3d_distort *pDistort);
+void p3d_distort_set_bias(p3d_distort *pDistort, float value);
+float p3d_distort_get_bias(const p3d_distort *pDistort);
 void p3d_distort_set_wet_dry(p3d_distort *pDistort, float value);
 float p3d_distort_get_wet_dry(const p3d_distort *pDistort);
 
