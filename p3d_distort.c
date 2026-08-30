@@ -46,7 +46,7 @@ ma_result p3d_distort_process_pcm_frames(p3d_distort *pDistort, void *pFramesOut
 
     while (iFrame < channels * frameCount)
         for (ma_uint32 iChannel = 0; iChannel < channels; iChannel++) {
-            pFramesOutF32[iFrame] = fmin(bias + drive * pFramesInF32[iFrame], 1.f) * wetDry 
+            pFramesOutF32[iFrame] = tanh(bias + drive * pFramesInF32[iFrame]) * wetDry 
                                     + pFramesInF32[iFrame] * dryWet;
             iFrame += 1;
         }
@@ -152,4 +152,157 @@ void p3d_distort_set_wet_dry(p3d_distort *pDistort, float value) {
 
 float p3d_distort_get_wet_dry(const p3d_distort *pDistort) {
     return pDistort->config.wetDry;
+}
+
+// clip effect
+
+ma_result p3d_clip_init(const p3d_clip_config *pConfig, const ma_allocation_callbacks *pAllocationCallbacks, p3d_clip *pClip) {
+    if (pClip == NULL) return MA_INVALID_ARGS;
+
+    memset(pClip, 0, sizeof *pClip);
+
+    if (pConfig == NULL) return MA_INVALID_ARGS;
+    /*{
+        //p3d_clip_node_config config;
+        p3d_clip_config conf;
+        conf.nodeConfig = ma_node_config_init();
+        // default settings: 1 channel, 44100 samplerate, threshold at .8/1., ratio 1:2, 50/50 drywet
+        conf.clip = p3d_clip_config_init(1, 44100, .8f, 2.f, .5f);
+    } else {*/
+        if (pConfig->drive < MIN_DRIVE || pConfig->drive > MAX_DRIVE) return MA_INVALID_ARGS;
+        if (pConfig->bias < -LIM_BIAS || pConfig->bias > LIM_BIAS) return MA_INVALID_ARGS;
+        if (pConfig->wetDry < 0.f || pConfig->wetDry > 1.f) return MA_INVALID_ARGS;
+
+        pClip->config = *pConfig;
+    //}
+
+    return MA_SUCCESS;
+}
+
+void p3d_clip_uninit(p3d_clip *pClip, const ma_allocation_callbacks *pAllocationCallbacks) {
+    if (pClip == NULL) return;
+}
+
+ma_result p3d_clip_process_pcm_frames(p3d_clip *pClip, void *pFramesOut, const void *pFramesIn, ma_uint32 frameCount) {
+    float *pFramesOutF32 = (float *)pFramesOut;
+    const float *pFramesInF32 = (const float *)pFramesIn;
+    ma_uint32 channels = pClip->config.channels;
+    ma_uint32 iFrame = 0;
+
+    if (pClip == NULL || pFramesOut == NULL || pFramesIn == NULL) return MA_INVALID_ARGS;
+
+    float wetDry = pClip->config.wetDry;
+    float dryWet = 1.f - wetDry;
+
+    float drive = pClip->config.drive;
+    float bias = pClip->config.bias;
+
+    while (iFrame < channels * frameCount)
+        for (ma_uint32 iChannel = 0; iChannel < channels; iChannel++) {
+            pFramesOutF32[iFrame] = fmax(bias + drive * pFramesInF32[iFrame], 1.f) * wetDry 
+                                    + pFramesInF32[iFrame] * dryWet;
+            iFrame += 1;
+        }
+    return MA_SUCCESS;
+}
+
+p3d_clip_config p3d_clip_config_init(ma_uint32 channels, ma_uint32 sampleRate, float drive, float bias, float wetDry) {
+    p3d_clip_config config;
+
+    memset(&config, 0, sizeof config);
+    config.channels = channels;
+    config.sampleRate = sampleRate;
+    config.drive = drive;
+    config.bias = bias;
+    config.wetDry = wetDry;
+
+    return config;
+}
+
+// TODO env
+
+p3d_clip_node_config p3d_clip_node_config_init(
+        ma_uint32 channels,
+        ma_uint32 sampleRate,
+        float drive,
+        float bias,
+        float wetDry) {
+    p3d_clip_node_config config;
+
+    config.nodeConfig = ma_node_config_init();
+    config.clip = p3d_clip_config_init(channels, sampleRate, drive, bias, wetDry);
+
+    return config;
+}
+
+ma_result p3d_clip_node_init(
+    ma_node_graph *pNodeGraph, 
+    const p3d_clip_node_config *pConfig, 
+    const ma_allocation_callbacks *pAllocationCallbacks, 
+    p3d_clip_node *pClipNode) {
+    ma_result result;
+
+    if (pClipNode == NULL) return MA_INVALID_ARGS;
+
+    memset(pClipNode, 0, sizeof *pClipNode);
+
+    result = p3d_clip_init(&pConfig->clip, pAllocationCallbacks, &pClipNode->clip);
+    if (result != MA_SUCCESS) return result;
+
+    ma_node_config baseConfig  = pConfig->nodeConfig;
+    baseConfig.vtable          = &p3d_distort_node_vtable;
+    baseConfig.pInputChannels  = &pConfig->clip.channels;
+    baseConfig.pOutputChannels = &pConfig->clip.channels;
+
+    result = ma_node_init(pNodeGraph, &baseConfig, pAllocationCallbacks, &pClipNode->baseNode);
+    if (result != MA_SUCCESS) {
+        p3d_clip_uninit(&pClipNode->clip, pAllocationCallbacks);
+    }
+
+    return result;
+}
+
+void p3d_clip_node_uninit(p3d_clip_node *pClipNode, const ma_allocation_callbacks *pAllocationCallbacks) {
+    if (pClipNode == NULL) return;
+
+    // base node uninitialises first
+    ma_node_uninit(pClipNode, pAllocationCallbacks);
+    p3d_clip_uninit(&pClipNode->clip, pAllocationCallbacks);
+}
+
+void p3d_clip_node_process_pcm_frames(ma_node *pNode, const float **ppFramesIn, ma_uint32 *pFrameCountIn, float **ppFramesOut, ma_uint32 *pFrameCountOut) {
+    p3d_clip_node *pClipNode = (p3d_clip_node *)pNode;
+
+    (void)pFrameCountIn;
+
+    p3d_clip_process_pcm_frames(&pClipNode->clip, ppFramesOut[0], ppFramesIn[0], *pFrameCountOut);
+}
+
+// getters and setters
+
+void p3d_clip_set_drive(p3d_clip *pClip, float value) {
+    if (value < MIN_DRIVE || value > MAX_DRIVE) return;
+    pClip->config.drive = value;
+}
+
+float p3d_clip_get_drive(const p3d_clip *pClip) {
+    return pClip->config.drive;
+}
+
+void p3d_clip_set_bias(p3d_clip *pClip, float value) {
+    if (value < -LIM_BIAS || value > LIM_BIAS) return;
+    pClip->config.bias = value;
+}
+
+float p3d_clip_get_bias(const p3d_clip *pClip) {
+    return pClip->config.bias;
+}
+
+void p3d_clip_set_wet_dry(p3d_clip *pClip, float value) {
+    if (value > 1.f || value < 0.f) return;
+    pClip->config.wetDry = value;
+}
+
+float p3d_clip_get_wet_dry(const p3d_clip *pClip) {
+    return pClip->config.wetDry;
 }
