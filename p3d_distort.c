@@ -1,4 +1,4 @@
-#include "ma_comp.h"
+#include "p3d_distort.h"
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
@@ -33,7 +33,7 @@ void p3d_distort_uninit(p3d_distort *pDistort, const ma_allocation_callbacks *pA
 ma_result p3d_distort_process_pcm_frames(p3d_distort *pDistort, void *pFramesOut, const void *pFramesIn, ma_uint32 frameCount) {
     float *pFramesOutF32 = (float *)pFramesOut;
     const float *pFramesInF32 = (const float *)pFramesIn;
-    ma_uint32 channels = pdistort->config.channels;
+    ma_uint32 channels = pDistort->config.channels;
     ma_uint32 iFrame = 0;
 
     if (pDistort == NULL || pFramesOut == NULL || pFramesIn == NULL) return MA_INVALID_ARGS;
@@ -87,9 +87,9 @@ ma_result p3d_distort_node_init(
 
     if (pDistortNode == NULL) return MA_INVALID_ARGS;
 
-    memset(pDistortNode, 0, sizeof *pdistortNode);
+    memset(pDistortNode, 0, sizeof *pDistortNode);
 
-    result = p3d_distort_init(&pConfig->distort, pAllocationCallbacks, &pdistortNode->distort);
+    result = p3d_distort_init(&pConfig->distort, pAllocationCallbacks, &pDistortNode->distort);
     if (result != MA_SUCCESS) return result;
 
     ma_node_config baseConfig  = pConfig->nodeConfig;
