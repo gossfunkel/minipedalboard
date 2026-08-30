@@ -1,4 +1,4 @@
-#include "ma_comp.h"
+#include "p3d_comp.h"
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>

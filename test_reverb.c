@@ -1,5 +1,7 @@
 #include "miniaudio.h"
 
+// NOTE we don't need reverb, miniaudio includes one as an extra
+
 MA_API ma_reverb_config ma_reverb_config_init(ma_uint32 channels, ma_uint32 sampleRate, float reverbTime, float density, float earlyReflections, float wetDry);
 
 MA_API ma_result ma_reverb_init(const ma_reverb_config *pConfig, ma_allocation_callbacks *pAllocationCallbacks, ma_reverb *reverb);
