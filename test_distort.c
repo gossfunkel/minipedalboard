@@ -26,7 +26,7 @@ int main() {
         return 2;
     }
 
-    p3d_distort_node_config dist_conf = p3d_distort_node_config_init(CHANNELS, SAMPLERATE, 10.f, 0.f, 1.f);
+    p3d_distort_node_config dist_conf = p3d_distort_node_config_init(CHANNELS, SAMPLERATE, DISTORT_MODE_SIN, 10.f, 0.1f, 0.f, 1.f);
 
     if ((result = p3d_distort_node_init(&engine.nodeGraph, &dist_conf, NULL, &dist_node)) != MA_SUCCESS) {
         if (result == MA_INVALID_ARGS) {
@@ -66,6 +66,7 @@ int main() {
             printf("\t'drywet [x]' - set dry/wet to x (floating point value in range 0.0 - 1.0)\n");
             printf("\t'drive [x]' - set drive to x (floating point value in range %f - %f)\n", MIN_DRIVE, MAX_DRIVE);
             printf("\t'bias [x]' - set bias to x (floating point value in range -%f - %f)\n", LIM_BIAS, LIM_BIAS);
+            printf("\t'factor [x]' - set factor to x (floating point value; mode dependent\n");
             printf("\t'EXIT' - close the application\n");
             printf("==========\n");
         } else if (strstr(inLine,"toggle") == inLine) {
@@ -86,16 +87,16 @@ int main() {
             }
             dist_bypassed = !dist_bypassed;
         } else if (strstr(inLine, "drywet") == inLine) {
-            float inVal = atof(inLine + 7);
-            p3d_distort_set_wet_dry(&dist_node.distort, inVal);
+            p3d_distort_set_wet_dry(&dist_node.distort, atof(inLine + 7));
             printf("Wet/dry mix is now: %f\n", p3d_distort_get_wet_dry(&dist_node.distort));
+        } else if (strstr(inLine, "factor") == inLine) {
+            p3d_distort_set_factor(&dist_node.distort, atof(inLine + 7));
+            printf("Factor is now: %f\n", p3d_distort_get_factor(&dist_node.distort));
         } else if (strstr(inLine, "drive") == inLine) {
-            float inVal = atof(inLine + 6);
-            p3d_distort_set_drive(&dist_node.distort, inVal);
+            p3d_distort_set_drive(&dist_node.distort, atof(inLine + 6));
             printf("Drive is now: %f\n", p3d_distort_get_drive(&dist_node.distort));
         } else if (strstr(inLine, "bias") == inLine) {
-            float inVal = atof(inLine + 5);
-            p3d_distort_set_bias(&dist_node.distort, inVal);
+            p3d_distort_set_bias(&dist_node.distort, atof(inLine + 5));
             printf("Bias is now: %f\n", p3d_distort_get_bias(&dist_node.distort));
         } else if (strstr(inLine,"EXIT\n") == inLine) {
             printf("Shutting down...\n");
