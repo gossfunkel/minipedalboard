@@ -26,7 +26,7 @@ int main() {
         return 2;
     }
 
-    p3d_distort_node_config dist_conf = p3d_distort_node_config_init(CHANNELS, SAMPLERATE, DISTORT_MODE_SIN, 10.f, 0.1f, 0.f, 1.f);
+    p3d_distort_node_config dist_conf = p3d_distort_node_config_init(CHANNELS, SAMPLERATE, DISTORT_MODE_SIN, 15.f, 2.f, -1.f, 1.f);
 
     if ((result = p3d_distort_node_init(&engine.nodeGraph, &dist_conf, NULL, &dist_node)) != MA_SUCCESS) {
         if (result == MA_INVALID_ARGS) {
