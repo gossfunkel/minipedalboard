@@ -26,7 +26,7 @@ int main() {
         return 2;
     }
 
-    p3d_distort_node_config dist_conf = p3d_distort_node_config_init(CHANNELS, SAMPLERATE, .8f, 10.f, 1.f);
+    p3d_distort_node_config dist_conf = p3d_distort_node_config_init(CHANNELS, SAMPLERATE, 10.f, 1.f);
 
     if ((result = p3d_distort_node_init(&engine.nodeGraph, &dist_conf, NULL, &dist_node)) != MA_SUCCESS) {
         fprintf(stderr, "Failed to initialise distortion node! Error: %d\n", result);
@@ -59,7 +59,8 @@ int main() {
         if (strchr(inLine, '?') == inLine) {
             printf("==== Node Tester application.\n-- Distortion node\n");
             printf("\t'toggle' - bypass node\n");
-            printf("\t'drywet [x]' - set dry/wet to x (floating point value)\n");
+            printf("\t'drywet [x]' - set dry/wet to x (floating point value in range 0.0 - 1.0)\n");
+            printf("\t'drive [x]' - set drive to x (floating point value in range %f - %f)\n", MIN_DRIVE, MAX_DRIVE);
             printf("\t'EXIT' - close the application\n");
             printf("==========\n");
         } else if (strstr(inLine,"toggle") == inLine) {
@@ -82,12 +83,11 @@ int main() {
         } else if (strstr(inLine, "drywet") == inLine) {
             float inVal = atof(inLine + 7);
             p3d_distort_set_wet_dry(&dist_node.distort, inVal);
-        } else if (strstr(inLine, "thresh") == inLine) {
-            float inVal = atof(inLine + 7);
-            p3d_distort_set_threshold(&dist_node.distort, inVal);
-        } else if (strstr(inLine, "ratio") == inLine) {
+            printf("Wet/dry mix is now: %f\n", p3d_distort_get_wet_dry(&dist_node.distort));
+        } else if (strstr(inLine, "drive") == inLine) {
             float inVal = atof(inLine + 6);
-            p3d_distort_set_ratio(&dist_node.distort, inVal);
+            p3d_distort_set_drive(&dist_node.distort, inVal);
+            printf("Drive is now: %f\n", p3d_distort_get_drive(&dist_node.distort));
         } else if (strstr(inLine,"EXIT\n") == inLine) {
             printf("Shutting down...\n");
             shouldClose = true;

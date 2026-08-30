@@ -16,8 +16,7 @@ ma_result p3d_distort_init(const p3d_distort_config *pConfig, const ma_allocatio
         // default settings: 1 channel, 44100 samplerate, threshold at .8/1., ratio 1:2, 50/50 drywet
         conf.distort = p3d_distort_config_init(1, 44100, .8f, 2.f, .5f);
     } else {*/
-        if (pConfig->threshold < 0.f || pConfig->threshold > 1.f) return MA_INVALID_ARGS;
-        if (pConfig->ratio < MIN_RATIO || pConfig->ratio > MAX_RATIO) return MA_INVALID_ARGS;
+        if (pConfig->drive < MIN_DRIVE || pConfig->drive > MAX_DRIVE) return MA_INVALID_ARGS;
         if (pConfig->wetDry < 0.f || pConfig->wetDry > 1.f) return MA_INVALID_ARGS;
 
         pDistort->config = *pConfig;
@@ -41,39 +40,36 @@ ma_result p3d_distort_process_pcm_frames(p3d_distort *pDistort, void *pFramesOut
     float wetDry = pDistort->config.wetDry;
     float dryWet = 1.f - wetDry;
 
-    float threshold = pDistort->config.threshold;
-    float ratio = pDistort->config.ratio;
+    float drive = pDistort->config.drive;
 
     while (iFrame < channels * frameCount)
         for (ma_uint32 iChannel = 0; iChannel < channels; iChannel++) {
-            pFramesOutF32[iFrame] = (fmin(threshold, pFramesInF32[iFrame]) + 
-                                    (fmax(pFramesInF32[iFrame], threshold) - threshold) / ratio) * wetDry 
+            pFramesOutF32[iFrame] = fmin(drive * pFramesInF32[iFrame], 1.f) * wetDry 
                                     + pFramesInF32[iFrame] * dryWet;
             iFrame += 1;
         }
     return MA_SUCCESS;
 }
 
-p3d_distort_config p3d_distort_config_init(ma_uint32 channels, ma_uint32 sampleRate, float threshold, float ratio, float wetDry) {
+p3d_distort_config p3d_distort_config_init(ma_uint32 channels, ma_uint32 sampleRate, float drive, float wetDry) {
     p3d_distort_config config;
 
     memset(&config, 0, sizeof config);
     config.channels = channels;
     config.sampleRate = sampleRate;
-    config.threshold = threshold;
-    config.ratio = ratio;
+    config.drive = drive;
     config.wetDry = wetDry;
 
     return config;
 }
 
-// TODO attack/decay
+// TODO env
 
-p3d_distort_node_config p3d_distort_node_config_init(ma_uint32 channels, ma_uint32 sampleRate, float threshold, float ratio, float wetDry) {
+p3d_distort_node_config p3d_distort_node_config_init(ma_uint32 channels, ma_uint32 sampleRate, float drive, float wetDry) {
     p3d_distort_node_config config;
 
     config.nodeConfig = ma_node_config_init();
-    config.distort = p3d_distort_config_init(channels, sampleRate, threshold, ratio, wetDry);
+    config.distort = p3d_distort_config_init(channels, sampleRate, drive, wetDry);
 
     return config;
 }
@@ -123,28 +119,20 @@ void p3d_distort_node_process_pcm_frames(ma_node *pNode, const float **ppFramesI
 
 // getters and setters
 
-void p3d_distort_set_threshold(p3d_distort *pDistort, float value) {
-    if (value < 0.f) return;
-    pDistort->config.threshold = value;
+void p3d_distort_set_drive(p3d_distort *pDistort, float value) {
+    if (value < MIN_DRIVE || value > MAX_DRIVE) return;
+    pDistort->config.drive = value;
 }
 
-float p3d_distort_get_threshold(const p3d_distort *pDistort) {
-    return pDistort->config.threshold;
+float p3d_distort_get_drive(const p3d_distort *pDistort) {
+    return pDistort->config.drive;
 }
 
-void p3d_distort_set_ratio(p3d_distort *pDistort, float value) {
-    if (value > MAX_RATIO || value < MIN_RATIO) return;
-    pDistort->config.ratio = value;
-}
-
-float p3d_distort_get_ratio(const p3d_distort *pDistort) {
-    return pDistort->config.ratio;
-}
 void p3d_distort_set_wet_dry(p3d_distort *pDistort, float value) {
     if (value > 1.f || value < 0.f) return;
     pDistort->config.wetDry = value;
 }
 
 float p3d_distort_get_wet_dry(const p3d_distort *pDistort) {
-    return pDistort->config.ratio;
+    return pDistort->config.wetDry;
 }
