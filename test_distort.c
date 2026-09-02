@@ -67,6 +67,7 @@ int main() {
             printf("\t'drive [x]' - set drive to x (floating point value in range %f - %f)\n", MIN_DRIVE, MAX_DRIVE);
             printf("\t'bias [x]' - set bias to x (floating point value in range -%f - %f)\n", LIM_BIAS, LIM_BIAS);
             printf("\t'factor [x]' - set factor to x (floating point value; mode dependent\n");
+            printf("\t'mode [x]' - set distortion type to x (unsigned integer value in range 0 - 2)\n");
             printf("\t'EXIT' - close the application\n");
             printf("==========\n");
         } else if (strstr(inLine,"toggle") == inLine) {
@@ -98,6 +99,9 @@ int main() {
         } else if (strstr(inLine, "bias") == inLine) {
             ma_distort_set_bias(&dist_node.distort, atof(inLine + 5));
             printf("Bias is now: %f\n", ma_distort_get_bias(&dist_node.distort));
+        } else if (strstr(inLine, "mode") == inLine) {
+            ma_distort_set_mode(&dist_node.distort, atoi(inLine + 5));
+            printf("Mode is now: %u\n", ma_distort_get_mode(&dist_node.distort));
         } else if (strstr(inLine,"EXIT\n") == inLine) {
             printf("Shutting down...\n");
             shouldClose = true;

@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+//#define NUM_MODES 3
+
 float process_clip(float drive, float factor, float signal) {
     (void)factor;
     return fmin(drive * signal, 1.f);
@@ -18,6 +20,8 @@ float process_tanh(float drive, float factor, float signal) {
 float process_sin(float drive, float factor, float signal) {
     return signal - factor * sin(M_PI * signal);
 }
+
+//float (*process)(float,float,float)[NUM_MODES] = {process_clip, process_tanh, process_sin};
 
 ma_result ma_distort_init(const ma_distort_config *pConfig, const ma_allocation_callbacks *pAllocationCallbacks, ma_distort *pDistort) {
     if (pDistort == NULL) return MA_INVALID_ARGS;
@@ -35,9 +39,23 @@ ma_result ma_distort_init(const ma_distort_config *pConfig, const ma_allocation_
         if (pConfig->drive < MIN_DRIVE || pConfig->drive > MAX_DRIVE) return MA_INVALID_ARGS;
         if (pConfig->bias < -LIM_BIAS || pConfig->bias > LIM_BIAS) return MA_INVALID_ARGS;
         if (pConfig->wetDry < 0.f || pConfig->wetDry > 1.f) return MA_INVALID_ARGS;
+        //if (pConfig->mode >= NUM_MODES) return MA_INVALID_ARGS;
 
         pDistort->config = *pConfig;
     //}
+    switch (pConfig->mode) {
+    case DISTORT_MODE_CLIP:
+        pDistort->transfer_fn = process_clip;
+        break;
+    case DISTORT_MODE_TANH:
+        pDistort->transfer_fn = process_tanh;
+        break;
+    case DISTORT_MODE_SIN:
+        pDistort->transfer_fn = process_sin;
+        break;
+    default:
+        return MA_INVALID_ARGS;
+    };
 
     return MA_SUCCESS;
 }
@@ -63,7 +81,7 @@ ma_result ma_distort_process_pcm_frames(ma_distort *pDistort, void *pFramesOut, 
 
     while (iFrame < channels * frameCount)
         for (ma_uint32 iChannel = 0; iChannel < channels; iChannel++) {
-            pFramesOutF32[iFrame] = pDistort->config.transfer_fn(drive, factor, bias + pFramesInF32[iFrame]) * wetDry 
+            pFramesOutF32[iFrame] = pDistort->transfer_fn(drive, factor, bias + pFramesInF32[iFrame]) * wetDry 
                                     + pFramesInF32[iFrame] * dryWet;
             iFrame += 1;
         }
@@ -73,7 +91,7 @@ ma_result ma_distort_process_pcm_frames(ma_distort *pDistort, void *pFramesOut, 
 ma_distort_config ma_distort_config_init(
         ma_uint32 channels,
         ma_uint32 sampleRate,
-        float (*transfer_fn)(float, float, float),
+        ma_uint32 mode,
         float drive,
         float factor,
         float bias,
@@ -83,7 +101,7 @@ ma_distort_config ma_distort_config_init(
     memset(&config, 0, sizeof config);
     config.channels = channels;
     config.sampleRate = sampleRate;
-    config.transfer_fn = transfer_fn;
+    config.mode = mode;
     config.drive = drive;
     config.factor = factor;
     config.bias = bias;
@@ -105,17 +123,7 @@ ma_distort_node_config ma_distort_node_config_init(
     ma_distort_node_config config;
 
     config.nodeConfig = ma_node_config_init();
-    switch (mode) {
-    case DISTORT_MODE_CLIP:
-        config.distort = ma_distort_config_init(channels, sampleRate, process_clip, drive, factor, bias, wetDry);
-        break;
-    case DISTORT_MODE_TANH:
-        config.distort = ma_distort_config_init(channels, sampleRate, process_tanh, drive, factor, bias, wetDry);
-        break;
-    case DISTORT_MODE_SIN:
-        config.distort = ma_distort_config_init(channels, sampleRate, process_sin, drive, factor, bias, wetDry);
-        break;
-    }
+    config.distort = ma_distort_config_init(channels, sampleRate, mode, drive, factor, bias, wetDry);
 
     return config;
 }
@@ -189,6 +197,27 @@ void ma_distort_set_bias(ma_distort *pDistort, float value) {
 
 float ma_distort_get_bias(const ma_distort *pDistort) {
     return pDistort->config.bias;
+}
+
+void ma_distort_set_mode(ma_distort *pDistort, ma_uint32 value) {
+    switch (value) {
+    case DISTORT_MODE_CLIP:
+        pDistort->transfer_fn = process_clip;
+        break;
+    case DISTORT_MODE_TANH:
+        pDistort->transfer_fn = process_tanh;
+        break;
+    case DISTORT_MODE_SIN:
+        pDistort->transfer_fn = process_sin;
+        break;
+    default:
+        return;
+    }
+    pDistort->config.mode = value;
+}
+
+ma_uint32 ma_distort_get_mode(const ma_distort *pDistort) {
+    return pDistort->config.mode;
 }
 
 void ma_distort_set_wet_dry(ma_distort *pDistort, float value) {

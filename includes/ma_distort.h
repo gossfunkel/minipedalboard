@@ -11,7 +11,7 @@
 typedef struct {
     ma_uint32 channels;
     ma_uint32 sampleRate;
-    float (*transfer_fn)(float, float, float);
+    ma_uint32 mode;
     float drive;
     float factor;
     float bias;
@@ -25,6 +25,7 @@ typedef struct {
 
 typedef struct {
     ma_distort_config config;
+    float (*transfer_fn)(float, float, float);
 } ma_distort;
 
 typedef struct {
@@ -35,7 +36,7 @@ typedef struct {
 ma_distort_config ma_distort_config_init(
     ma_uint32 channels,
     ma_uint32 sampleRate,
-    float (*transfer_fn)(float, float, float),
+    ma_uint32 mode,
     float drive,
     float factor,
     float bias,
@@ -83,6 +84,8 @@ void ma_distort_set_factor(ma_distort *pDistort, float value);
 float ma_distort_get_factor(const ma_distort *pDistort);
 void ma_distort_set_bias(ma_distort *pDistort, float value);
 float ma_distort_get_bias(const ma_distort *pDistort);
+void ma_distort_set_mode(ma_distort *pDistort, ma_uint32 value);
+ma_uint32 ma_distort_get_mode(const ma_distort *pDistort);
 void ma_distort_set_wet_dry(ma_distort *pDistort, float value);
 float ma_distort_get_wet_dry(const ma_distort *pDistort);
 
