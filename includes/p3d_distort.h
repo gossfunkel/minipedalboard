@@ -44,7 +44,7 @@ p3d_distort_config p3d_distort_config_init(
 ma_result p3d_distort_init(
     const p3d_distort_config *pConfig, 
     const ma_allocation_callbacks *pAllocationCallbacks, 
-    p3d_distort *pdistort
+    p3d_distort *pDistort
 );
 void p3d_distort_uninit(p3d_distort *pDistort, const ma_allocation_callbacks *pAllocationCallbacks);
 ma_result p3d_distort_process_pcm_frames(

@@ -11,6 +11,7 @@ float process_clip(float drive, float factor, float signal) {
 
 float process_tanh(float drive, float factor, float signal) {
     (void)factor;
+    // TODO swap for LUT/fast map 
     return tanh(drive * signal);
 }
 
