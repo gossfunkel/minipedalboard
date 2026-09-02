@@ -8,9 +8,9 @@ typedef struct {
     float fade_time;
     float threshold;
     float max_amp;
-} p3d_normalize_node_config;
+} ma_normalize_node_config;
 
 typedef struct {
     ma_node_base baseNode;
-    p3d_normalize_node_config config;
-} p3d_normalize_node;
+    ma_normalize_node_config config;
+} ma_normalize_node;

@@ -1,9 +1,9 @@
-#include "p3d_comp.h"
+#include "ma_comp.h"
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
 
-/*ma_result p3d_compress_init(const p3d_compress_config *pConfig, const ma_allocation_callbacks *pAllocationCallbacks, p3d_compress *pCompress) {
+/*ma_result ma_compress_init(const ma_compress_config *pConfig, const ma_allocation_callbacks *pAllocationCallbacks, ma_compress *pCompress) {
     if (pCompress == NULL) return MA_INVALID_ARGS;
 
     memset(pCompress, 0, sizeof *pCompress);
@@ -11,11 +11,11 @@
     if (pConfig == NULL) return MA_INVALID_ARGS;
     /
     {
-        //p3d_compress_node_config config;
-        p3d_compress_config conf;
+        //ma_compress_node_config config;
+        ma_compress_config conf;
         conf.nodeConfig = ma_node_config_init();
         // default settings: 1 channel, 44100 samplerate, threshold at .8/1., ratio 1:2, 50/50 drywet
-        conf.compress = p3d_compress_config_init(1, 44100, .8f, 2.f, .5f);
+        conf.compress = ma_compress_config_init(1, 44100, .8f, 2.f, .5f);
     } else { 
     /
         if (pConfig->threshold < 0.f || pConfig->threshold > 1.f) return MA_INVALID_ARGS;
@@ -34,11 +34,11 @@
     return MA_SUCCESS;
 }
 
-void p3d_compress_uninit(p3d_compress *pCompress, const ma_allocation_callbacks *pAllocationCallbacks) {
+void ma_compress_uninit(ma_compress *pCompress, const ma_allocation_callbacks *pAllocationCallbacks) {
     if (pCompress == NULL) return;
 }*/
 
-/*ma_result p3d_compress_process_pcm_frames(p3d_compress *pCompress, void *pFramesOut, const void *pFramesIn, ma_uint32 frameCount) {
+/*ma_result ma_compress_process_pcm_frames(ma_compress *pCompress, void *pFramesOut, const void *pFramesIn, ma_uint32 frameCount) {
 
             if (pFramesInF32[iFrame] > threshold) {
                 pCompress->onTime += spf;
@@ -59,7 +59,7 @@ void p3d_compress_uninit(p3d_compress *pCompress, const ma_allocation_callbacks 
     return MA_SUCCESS;
 }*/
 
-/*p3d_compress_config p3d_compress_config_init(
+/*ma_compress_config ma_compress_config_init(
         ma_uint32 channels, 
         ma_uint32 sampleRate, 
         float threshold,
@@ -67,14 +67,14 @@ void p3d_compress_uninit(p3d_compress *pCompress, const ma_allocation_callbacks 
         float attack,
         float release,
         float wetDry) {
-    p3d_compress_config config;
+    ma_compress_config config;
 
     return config;
 }*/
 
 // TODO attack/decay
 
-p3d_compress_node_config p3d_compress_node_config_init(
+ma_compress_node_config ma_compress_node_config_init(
         ma_uint32 channels, 
         ma_uint32 sampleRate, 
         float threshold,
@@ -82,12 +82,12 @@ p3d_compress_node_config p3d_compress_node_config_init(
         float attack,
         float release,
         float wetDry) {
-    p3d_compress_node_config config;
+    ma_compress_node_config config;
 
     memset(&config, 0, sizeof config);
 
     config.nodeConfig = ma_node_config_init();
-    /*config.compress = p3d_compress_config_init(
+    /*config.compress = ma_compress_config_init(
         channels, sampleRate, threshold, ratio, attack, release, wetDry
     );*/
     config.channels = channels;
@@ -102,18 +102,18 @@ p3d_compress_node_config p3d_compress_node_config_init(
     return config;
 }
 
-ma_result p3d_compress_node_init(
+ma_result ma_compress_node_init(
     ma_node_graph *pNodeGraph, 
-    const p3d_compress_node_config *pConfig, 
+    const ma_compress_node_config *pConfig, 
     const ma_allocation_callbacks *pAllocationCallbacks, 
-    p3d_compress_node *pCompressNode) {
+    ma_compress_node *pCompressNode) {
     ma_result result;
 
     if (pCompressNode == NULL) return MA_INVALID_ARGS;
 
     memset(pCompressNode, 0, sizeof *pCompressNode);
 
-    //result = p3d_compress_init(&pConfig->compress, pAllocationCallbacks, &pCompressNode->compress);
+    //result = ma_compress_init(&pConfig->compress, pAllocationCallbacks, &pCompressNode->compress);
     //if (result != MA_SUCCESS) return result;
     if (pConfig->threshold < 0.f || pConfig->threshold > 1.f) return MA_INVALID_ARGS;
     if (pConfig->ratio < MIN_RATIO || pConfig->ratio > MAX_RATIO) return MA_INVALID_ARGS;
@@ -124,28 +124,28 @@ ma_result p3d_compress_node_init(
     pCompressNode->offTime = MAX_RELEASE;
 
     ma_node_config baseConfig  = pConfig->nodeConfig;
-    baseConfig.vtable          = &p3d_compress_node_vtable;
+    baseConfig.vtable          = &ma_compress_node_vtable;
     baseConfig.pInputChannels  = &pConfig->channels;
     baseConfig.pOutputChannels = &pConfig->channels;
 
     result = ma_node_init(pNodeGraph, &baseConfig, pAllocationCallbacks, &pCompressNode->baseNode);
    /* if (result != MA_SUCCESS) {
-        p3d_compress_uninit(&pCompressNode->compress, pAllocationCallbacks);
+        ma_compress_uninit(&pCompressNode->compress, pAllocationCallbacks);
     }*/
 
     return result;
 }
 
-void p3d_compress_node_uninit(p3d_compress_node *pCompressNode, const ma_allocation_callbacks *pAllocationCallbacks) {
+void ma_compress_node_uninit(ma_compress_node *pCompressNode, const ma_allocation_callbacks *pAllocationCallbacks) {
     if (pCompressNode == NULL) return;
 
     // base node uninitialises first
     ma_node_uninit(pCompressNode, pAllocationCallbacks);
-    //p3d_compress_uninit(&pCompressNode->compress, pAllocationCallbacks);
+    //ma_compress_uninit(&pCompressNode->compress, pAllocationCallbacks);
 }
 
-void p3d_compress_node_process_pcm_frames(ma_node *pNode, const float **ppFramesIn, ma_uint32 *pFrameCountIn, float **ppFramesOut, ma_uint32 *pFrameCountOut) {
-    p3d_compress_node *pCompress = (p3d_compress_node *)pNode;
+void ma_compress_node_process_pcm_frames(ma_node *pNode, const float **ppFramesIn, ma_uint32 *pFrameCountIn, float **ppFramesOut, ma_uint32 *pFrameCountOut) {
+    ma_compress_node *pCompress = (ma_compress_node *)pNode;
 
     if (pCompress == NULL || ppFramesOut == NULL || ppFramesIn == NULL) return;
 
@@ -201,47 +201,47 @@ void p3d_compress_node_process_pcm_frames(ma_node *pNode, const float **ppFrames
 
 // getters and setters
 
-void p3d_compress_node_set_threshold(p3d_compress_node *pCompress, float value) {
+void ma_compress_node_set_threshold(ma_compress_node *pCompress, float value) {
     if (value < 0.f) return;
     pCompress->config.threshold = value;
 }
 
-float p3d_compress_node_get_threshold(const p3d_compress_node *pCompress) {
+float ma_compress_node_get_threshold(const ma_compress_node *pCompress) {
     return pCompress->config.threshold;
 }
 
-void p3d_compress_node_set_ratio(p3d_compress_node *pCompress, float value) {
+void ma_compress_node_set_ratio(ma_compress_node *pCompress, float value) {
     if (value > MAX_RATIO || value < MIN_RATIO) return;
     pCompress->config.ratio = value;
 }
 
-float p3d_compress_node_get_ratio(const p3d_compress_node *pCompress) {
+float ma_compress_node_get_ratio(const ma_compress_node *pCompress) {
     return pCompress->config.ratio;
 }
 
-void p3d_compress_node_set_attack(p3d_compress_node *pCompress, float value) {
+void ma_compress_node_set_attack(ma_compress_node *pCompress, float value) {
     if (value < 0.f || value > MAX_ATTACK) return;
     pCompress->config.attack = value;
 }
 
-float p3d_compress_node_get_attack(const p3d_compress_node *pCompress) {
+float ma_compress_node_get_attack(const ma_compress_node *pCompress) {
     return pCompress->config.attack;
 }
 
-void p3d_compress_node_set_release(p3d_compress_node *pCompress, float value) {
+void ma_compress_node_set_release(ma_compress_node *pCompress, float value) {
     if (value < 0.f || value > MAX_RELEASE) return;
     pCompress->config.release = value;
 }
 
-float p3d_compress_node_get_release(const p3d_compress_node *pCompress) {
+float ma_compress_node_get_release(const ma_compress_node *pCompress) {
     return pCompress->config.release;
 }
 
-void p3d_compress_node_set_wet_dry(p3d_compress_node *pCompress, float value) {
+void ma_compress_node_set_wet_dry(ma_compress_node *pCompress, float value) {
     if (value > 1.f || value < 0.f) return;
     pCompress->config.wetDry = value;
 }
 
-float p3d_compress_node_get_wet_dry(const p3d_compress_node *pCompress) {
+float ma_compress_node_get_wet_dry(const ma_compress_node *pCompress) {
     return pCompress->config.ratio;
 }

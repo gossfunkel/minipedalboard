@@ -1,4 +1,4 @@
-#include "p3d_comp.h"
+#include "ma_comp.h"
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -12,7 +12,7 @@ int main() {
     ma_result result;
     ma_engine engine;
     ma_sound sound;
-    p3d_compress_node comp_node;
+    ma_compress_node comp_node;
 
     printf("Welcome! Initialising...\n");
 
@@ -26,9 +26,9 @@ int main() {
         return 2;
     }
 
-    p3d_compress_node_config comp_conf = p3d_compress_node_config_init(CHANNELS, SAMPLERATE, .8f, 2.f, .1f, .2f, 1.f);
+    ma_compress_node_config comp_conf = ma_compress_node_config_init(CHANNELS, SAMPLERATE, .8f, 2.f, .1f, .2f, 1.f);
 
-    if ((result = p3d_compress_node_init(&engine.nodeGraph, &comp_conf, NULL, &comp_node)) != MA_SUCCESS) {
+    if ((result = ma_compress_node_init(&engine.nodeGraph, &comp_conf, NULL, &comp_node)) != MA_SUCCESS) {
         fprintf(stderr, "Failed to initialise compressor node! Error: %d\n", result);
         return 3;
     }
@@ -81,7 +81,7 @@ int main() {
             comp_bypassed = !comp_bypassed;
         } else if (strstr(inLine, "drywet") == inLine) {
             float inVal = atof(inLine + 7);
-            p3d_compress_node_set_wet_dry(&comp_node, inVal);
+            ma_compress_node_set_wet_dry(&comp_node, inVal);
         } else if (strstr(inLine,"EXIT\n") == inLine) {
             printf("Shutting down...\n");
             shouldClose = true;
@@ -91,7 +91,7 @@ int main() {
     }
 
     ma_sound_uninit(&sound);
-    p3d_compress_node_uninit(&comp_node, NULL);
+    ma_compress_node_uninit(&comp_node, NULL);
     ma_engine_uninit(&engine);
 
     printf("Goodbye!");

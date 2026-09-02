@@ -1,4 +1,4 @@
-#include "p3d_distort.h"
+#include "ma_distort.h"
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -12,7 +12,7 @@ int main() {
     ma_result result;
     ma_engine engine;
     ma_sound sound;
-    p3d_distort_node dist_node;
+    ma_distort_node dist_node;
 
     printf("Welcome! Initialising...\n");
 
@@ -26,9 +26,9 @@ int main() {
         return 2;
     }
 
-    p3d_distort_node_config dist_conf = p3d_distort_node_config_init(CHANNELS, SAMPLERATE, DISTORT_MODE_SIN, 15.f, 2.f, -1.f, 1.f);
+    ma_distort_node_config dist_conf = ma_distort_node_config_init(CHANNELS, SAMPLERATE, DISTORT_MODE_SIN, 15.f, 2.f, -1.f, 1.f);
 
-    if ((result = p3d_distort_node_init(&engine.nodeGraph, &dist_conf, NULL, &dist_node)) != MA_SUCCESS) {
+    if ((result = ma_distort_node_init(&engine.nodeGraph, &dist_conf, NULL, &dist_node)) != MA_SUCCESS) {
         if (result == MA_INVALID_ARGS) {
             fprintf(stderr, "Distortion node initialised with incorrect values!\n");
             return 3;
@@ -87,17 +87,17 @@ int main() {
             }
             dist_bypassed = !dist_bypassed;
         } else if (strstr(inLine, "drywet") == inLine) {
-            p3d_distort_set_wet_dry(&dist_node.distort, atof(inLine + 7));
-            printf("Wet/dry mix is now: %f\n", p3d_distort_get_wet_dry(&dist_node.distort));
+            ma_distort_set_wet_dry(&dist_node.distort, atof(inLine + 7));
+            printf("Wet/dry mix is now: %f\n", ma_distort_get_wet_dry(&dist_node.distort));
         } else if (strstr(inLine, "factor") == inLine) {
-            p3d_distort_set_factor(&dist_node.distort, atof(inLine + 7));
-            printf("Factor is now: %f\n", p3d_distort_get_factor(&dist_node.distort));
+            ma_distort_set_factor(&dist_node.distort, atof(inLine + 7));
+            printf("Factor is now: %f\n", ma_distort_get_factor(&dist_node.distort));
         } else if (strstr(inLine, "drive") == inLine) {
-            p3d_distort_set_drive(&dist_node.distort, atof(inLine + 6));
-            printf("Drive is now: %f\n", p3d_distort_get_drive(&dist_node.distort));
+            ma_distort_set_drive(&dist_node.distort, atof(inLine + 6));
+            printf("Drive is now: %f\n", ma_distort_get_drive(&dist_node.distort));
         } else if (strstr(inLine, "bias") == inLine) {
-            p3d_distort_set_bias(&dist_node.distort, atof(inLine + 5));
-            printf("Bias is now: %f\n", p3d_distort_get_bias(&dist_node.distort));
+            ma_distort_set_bias(&dist_node.distort, atof(inLine + 5));
+            printf("Bias is now: %f\n", ma_distort_get_bias(&dist_node.distort));
         } else if (strstr(inLine,"EXIT\n") == inLine) {
             printf("Shutting down...\n");
             shouldClose = true;
@@ -107,7 +107,7 @@ int main() {
     }
 
     ma_sound_uninit(&sound);
-    p3d_distort_node_uninit(&dist_node, NULL);
+    ma_distort_node_uninit(&dist_node, NULL);
     ma_engine_uninit(&engine);
 
     printf("Goodbye!");
