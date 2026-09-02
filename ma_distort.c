@@ -5,7 +5,11 @@
 #include <stdlib.h>
 
 //#define NUM_MODES 3
-
+/* builtin modes include
+ *  - hard digital clip (sharp)
+ *  - tanh function (warmer)
+ *  - sinusoid function (more varied)
+ */
 float process_clip(float drive, float factor, float signal) {
     (void)factor;
     return fmin(drive * signal, 1.f);
@@ -109,8 +113,6 @@ ma_distort_config ma_distort_config_init(
 
     return config;
 }
-
-// TODO env
 
 ma_distort_node_config ma_distort_node_config_init(
         ma_uint32 channels,
