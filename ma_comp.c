@@ -133,6 +133,8 @@ ma_result ma_compress_node_init(
         ma_compress_uninit(&pCompressNode->compress, pAllocationCallbacks);
     }*/
 
+    // TODO allocate buffer
+
     return result;
 }
 
