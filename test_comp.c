@@ -29,6 +29,10 @@ int main() {
     ma_compress_node_config comp_conf = ma_compress_node_config_init(CHANNELS, SAMPLERATE, .8f, 2.f, .1f, .2f, 1.f);
 
     if ((result = ma_compress_node_init(&engine.nodeGraph, &comp_conf, NULL, &comp_node)) != MA_SUCCESS) {
+        if (result == MA_INVALID_ARGS) {
+            fprintf(stderr, "Compressor node initialised with incorrect values!\n");
+            return 3;
+        }
         fprintf(stderr, "Failed to initialise compressor node! Error: %d\n", result);
         return 3;
     }

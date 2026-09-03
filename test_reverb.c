@@ -1,92 +1,120 @@
-#include "miniaudio.h"
+#include "ma_reverb.h"
 
-// NOTE we don't need reverb, miniaudio includes one as an extra
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
-MA_API ma_reverb_config ma_reverb_config_init(ma_uint32 channels, ma_uint32 sampleRate, float reverbTime, float density, float earlyReflections, float wetDry);
+#define CHANNELS 2
+#define SAMPLERATE 48000
 
-MA_API ma_result ma_reverb_init(const ma_reverb_config *pConfig, ma_allocation_callbacks *pAllocationCallbacks, ma_reverb *reverb);
-MA_API void ma_reverb_uninit(ma_reverb *pReverb, ma_allocation_callbacks *pAllocationCallbacks);
-MA_API ma_result ma_reverb_process_pcm_frames(ma_reverb *pReverb, void *pFramesOut, const void *pFramesIn, ma_uint32 frameCount);
-MA_API void ma_reverb_set_reverb_time(ma_reverb *pReverb, float value);
-MA_API float ma_reverb_get_reverb_time(const ma_reverb *pReverb);
-MA_API void ma_reverb_set_density(ma_reverb *pReverb, float value);
-MA_API float ma_reverb_get_density(const ma_reverb *pReverb);
-MA_API void ma_reverb_set_early_reflections(ma_reverb *pReverb, float value);
-MA_API float ma_reverb_get_early_reflections(const ma_reverb *pReverb);
-MA_API void ma_reverb_set_dry_wet(ma_reverb *pReverb, float value);
-MA_API float ma_reverb_get_dry_wet(const ma_reverb *pReverb);
+int main() {
+    ma_result result;
+    ma_engine engine;
+    ma_sound sound;
+    ma_reverb_node dist_node;
 
-MA_API ma_reverb_node_config ma_reverb_node_config_init(ma_uint32 channels, ma_uint32 sampleRate, float reverbTime, float density, float earlyReflections, float wetDry)
+    printf("Welcome! Initialising...\n");
 
-typedef struct {
-    ma_uint32 channels;
-    ma_uint32 sampleRate;
-    float reverbTime;
-    float density;
-    float earlyReflections;
-    float wetDry;
-} ma_reverb_config;
+    if ((result = ma_engine_init(NULL, &engine)) != MA_SUCCESS) {
+        fprintf(stderr, "Failed to initialise engine! Error: %d\n", result);
+        return 1;
+    }
 
-typedef struct {
-    ma_reverb_config config;
-    ma_uint32 cursor; // always at or before playhead
-    ma_uint32 bufferSizeInFrames;
-    float *pBuffer;
-} ma_reverb;
+    if ((result = ma_sound_init_from_file(&engine, "test_tone_2.wav", MA_SOUND_FLAG_NO_DEFAULT_ATTACHMENT, NULL, NULL, &sound)) != MA_SUCCESS) {
+        fprintf(stderr, "Failed to initialise sound from file! Error: %d\n", result);
+        return 2;
+    }
 
-typedef struct {
-    ma_node_config nodeConfig;
-    ma_reverb_config reverb;
-} ma_reverb_node_config;
+    ma_distort_node_config dist_conf = ma_reb_node_config_init(CHANNELS, SAMPLERATE, DISTORT_MODE_SIN, 15.f, 2.f, -1.f, 1.f);
 
-typedef struct {
-    ma_node_base baseNode;
-    ma_reverb reverb;
-} ma_reverb_node;
+    if ((result = ma_distort_node_init(&engine.nodeGraph, &dist_conf, NULL, &dist_node)) != MA_SUCCESS) {
+        if (result == MA_INVALID_ARGS) {
+            fprintf(stderr, "Distortion node initialised with incorrect values!\n");
+            return 3;
+        }
+        fprintf(stderr, "Failed to initialise distortion node! Error: %d\n", result);
+        return 3;
+    }
 
-MA_API ma_result ma_reverb_init(const ma_reverb_config *pConfig, ma_allocation_callbacks *pAllocationCallbacks, ma_reverb *pReverb) {
-    if (pReverb == NULL) return MA_INVALID_ARGS;
+    if ((result = ma_node_attach_output_bus(&sound, 0, &dist_node, 0)) != MA_SUCCESS) {
+        fprintf(stderr, "Failed to attach sound to distortion node! Error: %d\n", result);
+        return 4;
+    }
 
-    MA_ZERO_OBJECT(pReverb);
+    if ((result = ma_node_attach_output_bus(&dist_node, 0, ma_node_graph_get_endpoint(&engine.nodeGraph), 0)) != MA_SUCCESS) {
+        fprintf(stderr, "Failed to attach distortion node to graph endpoint! Error: %d\n", result);
+        return 5;
+    }
 
-    if (pConfig == NULL) return MA_INVALID_ARGS;
-    if (pConfig.reverbTime < 0.f) return MA_INVALID_ARGS;
-    if (pConfig.wetDry < 0.f || pConfig.wetDry > 1.f) return MA_INVALID_ARGS;
+    ma_sound_set_looping(&sound, true);
+    ma_sound_start(&sound);
 
-    pReverb->config = pConfig;
-    pReverb->bufferSizeInFrames = pConfig->reverbTime * pConfig->sampleRate;
-    pReverb->cursor = 0;
+    bool dist_bypassed = false;
+    bool shouldClose = false;
+    char inLine[64];
 
-    pReverb->pBuffer = (float *)ma_malloc((size_t)(pReverb->bufferSizeInFrames * ma_get_bytes_per_frame(ma_format_f32, pConfig->channels)), pAllocationCallbacks);
-    if (pReverb->pBuffer == NULL) return MA_OUT_OF_MEMORY;
+    printf("Initialised. Type '?' for commands.\n");
 
-    ma_silence_pcm_frames(pReverb->pBuffer, pReverb->bufferSizeInFrames, ma_format_f32, pConfig->channels);
+    while (!shouldClose) {
+        fflush(stdin);
+        printf("> ");
+        fgets(inLine, sizeof inLine, stdin);
+        if (strchr(inLine, '?') == inLine) {
+            printf("==== Node Tester application.\n-- Distortion node\n");
+            printf("\t'toggle' - bypass node\n");
+            printf("\t'drywet [x]' - set dry/wet to x (floating point value in range 0.0 - 1.0)\n");
+            printf("\t'drive [x]' - set drive to x (floating point value in range %f - %f)\n", MIN_DRIVE, MAX_DRIVE);
+            printf("\t'bias [x]' - set bias to x (floating point value in range -%f - %f)\n", LIM_BIAS, LIM_BIAS);
+            printf("\t'factor [x]' - set factor to x (floating point value; mode dependent\n");
+            printf("\t'mode [x]' - set distortion type to x (unsigned integer value in range 0 - 2)\n");
+            printf("\t'EXIT' - close the application\n");
+            printf("==========\n");
+        } else if (strstr(inLine,"toggle") == inLine) {
+            if (dist_bypassed) {
+                printf("Enabling distortion node...\n");
+                if (ma_node_attach_output_bus(&sound, 0, &dist_node, 0) != MA_SUCCESS) {
+                    fprintf(stderr, "Failed to toggle node connection!\n");
+                    return 6;
+                }
+                printf("Distortion node enabled.\n");
+            } else {
+                printf("Disabling distortion node...\n");
+                if (ma_node_attach_output_bus(&sound, 0, ma_node_graph_get_endpoint(&engine.nodeGraph), 0) != MA_SUCCESS) {
+                    fprintf(stderr, "Failed to toggle node connection!\n");
+                    return 7;
+                }
+                printf("Distortion node disabled.\n");
+            }
+            dist_bypassed = !dist_bypassed;
+        } else if (strstr(inLine, "drywet") == inLine) {
+            ma_distort_set_wet_dry(&dist_node.distort, atof(inLine + 7));
+            printf("Wet/dry mix is now: %f\n", ma_distort_get_wet_dry(&dist_node.distort));
+        } else if (strstr(inLine, "factor") == inLine) {
+            ma_distort_set_factor(&dist_node.distort, atof(inLine + 7));
+            printf("Factor is now: %f\n", ma_distort_get_factor(&dist_node.distort));
+        } else if (strstr(inLine, "drive") == inLine) {
+            ma_distort_set_drive(&dist_node.distort, atof(inLine + 6));
+            printf("Drive is now: %f\n", ma_distort_get_drive(&dist_node.distort));
+        } else if (strstr(inLine, "bias") == inLine) {
+            ma_distort_set_bias(&dist_node.distort, atof(inLine + 5));
+            printf("Bias is now: %f\n", ma_distort_get_bias(&dist_node.distort));
+        } else if (strstr(inLine, "mode") == inLine) {
+            ma_distort_set_mode(&dist_node.distort, atoi(inLine + 5));
+            printf("Mode is now: %u\n", ma_distort_get_mode(&dist_node.distort));
+        } else if (strstr(inLine,"EXIT\n") == inLine) {
+            printf("Shutting down...\n");
+            shouldClose = true;
+        } else {
+            printf("Unrecognised command. Enter '?' for help.\n");
+        }
+    }
 
-    return MA_SUCCESS;
-}
+    ma_sound_uninit(&sound);
+    ma_distort_node_uninit(&dist_node, NULL);
+    ma_engine_uninit(&engine);
 
-MA_API void ma_reverb_uninit(ma_reverb *pReverb, ma_allocation_callbacks *pAllocationCallbacks) {
-    if (pReverb == NULL) return;
+    printf("Goodbye!");
 
-    ma_free(pReverb->pBuffer, pAllocationCallbacks);
-}
-
-MA_API ma_result ma_reverb_process_pcm_frames(ma_reverb *pReverb, void *pFramesOut, const void *pFramesIn, ma_uint32 frameCount) {
-    
-}
-
-MA_API ma_reverb_config ma_reverb_config_init(ma_uint32 channels, ma_uint32 sampleRate, float reverbTime, float density, float earlyReflections, float wetDry) {
-    ma_reverb_config config;
-
-    MA_ZERO_OBJECT(&config);
-    config.channels = channels;
-    config.sampleRate = sampleRate;
-    config.reverbTime = reverbTime;
-    config.density = density;
-    config.earlyReflections = earlyReflections;
-    config.wetDry = wetDry;
-}
-
-MA_API ma_reverb_node_config ma_reverb_node_config_init(ma_uint32 channels, ma_uint32 sampleRate, float reverbTime, float density, float earlyReflections, float wetDry) {
-    
+    return 0;
 }

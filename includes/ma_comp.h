@@ -86,6 +86,10 @@ void ma_compress_node_set_threshold(ma_compress_node *pCompress, float value);
 float ma_compress_node_get_threshold(const ma_compress_node *pCompress);
 void ma_compress_node_set_ratio(ma_compress_node *pCompress, float value);
 float ma_compress_node_get_ratio(const ma_compress_node *pCompress);
+void ma_compress_node_set_attack(ma_compress_node *pCompress, float value);
+float ma_compress_node_get_attack(const ma_compress_node *pCompress);
+void ma_compress_node_set_release(ma_compress_node *pCompress, float value);
+float ma_compress_node_get_release(const ma_compress_node *pCompress);
 void ma_compress_node_set_wet_dry(ma_compress_node *pCompress, float value);
 float ma_compress_node_get_wet_dry(const ma_compress_node *pCompress);
 
