@@ -1,18 +1,27 @@
 #include "ma_flanger.h"
 
 ma_flanger_config ma_flanger_config_init (
-    ma_uint32 channels, 
-    ma_uint32 sampleRate, 
-    float rate, 
-    float depth, 
-    float dryWet) {
+        ma_uint32 channels, 
+        ma_uint32 sampleRate, 
+        float rate, 
+        float depth, 
+        float dryWet) {
+    ma_flanger_config config;
+    memset(&config, 0, sizeof config);
 
+    config.channels   = channels;
+    config.sampleRate = sampleRate;
+    config.rate       = rate;
+    config.depth      = depth;
+    config.dryWet     = dryWet;
+
+    return config;
 }
 
 ma_result ma_flanger_init (
-    const ma_flanger_config *pConfig, 
-    const ma_allocation_callbacks *pAllocationCallbacks, 
-    ma_flanger *pFlanger) {
+        const ma_flanger_config *pConfig, 
+        const ma_allocation_callbacks *pAllocationCallbacks, 
+        ma_flanger *pFlanger) {
     if (pFlanger == NULL) return MA_INVALID_ARGS;
 
     memset(pFlanger, 0, sizeof *pFlanger);
@@ -26,7 +35,8 @@ ma_result ma_flanger_init (
     pFlanger->bufferSizeInFrames = (ma_uint32)(0.001f * MAX_DELAY * pConfig->sampleRate);
     pFlanger->cursor = 0;
 
-    pFlanger->pBuffer = (float *)ma_malloc((size_t)(pFlanger->bufferSizeInFrames * 
+    pFlanger->pBuffer = 
+        (float *)ma_malloc((size_t)(pFlanger->bufferSizeInFrames * 
         ma_get_bytes_per_frame(ma_format_f32, pConfig->channels)), pAllocationCallbacks);
 
     ma_silence_pcm_frames(pFlanger->pBuffer, pFlanger->bufferSizeInFrames, ma_format_f32, pConfig->channels);
@@ -35,39 +45,46 @@ ma_result ma_flanger_init (
 }
 
 void ma_flanger_uninit (
-    ma_flanger *pFlanger, 
-    const ma_allocation_callbacks *pAllocationCallbacks) {
+        ma_flanger *pFlanger, 
+        const ma_allocation_callbacks *pAllocationCallbacks) {
     if (pFlanger == NULL) return;
     ma_free(pFlanger->pBuffer, pAllocationCallbacks);
 }
 
 ma_result ma_flanger_process_pcm_frames (
-    ma_flanger *pFlanger,
-    void *pFramesOut,
-    const void *pFramesIn,
-    ma_uint32 frameCount) {
-
+        ma_flanger *pFlanger,
+        void *pFramesOut,
+        const void *pFramesIn,
+        ma_uint32 frameCount) {
+    // TODO
 }
 
 ma_flanger_node_config ma_flanger_node_config_init (
-    ma_uint32 channels, 
-    ma_uint32 sampleRate, 
-    float rate, 
-    float depth, 
-    float dryWet) {
+        ma_uint32 channels, 
+        ma_uint32 sampleRate, 
+        float rate, 
+        float depth, 
+        float dryWet) {
+    ma_delay_node_config config;
 
+    config.nodeConfig = ma_node_config_init();
+    config.flangerConfig = 
+        ma_flanger_config_init(channels, sampleRate, rate, depth, dryWet);
+
+    return config;
 }
 
 ma_result ma_flanger_node_init (
-    ma_node_graph *pNodeGraph, 
-    const ma_flanger_node_config *pConfig, 
-    const ma_allocation_callbacks *pAllocationCallbacks, 
-    ma_flanger_node *pFlangerNode) {
+        ma_node_graph *pNodeGraph, 
+        const ma_flanger_node_config *pConfig, 
+        const ma_allocation_callbacks *pAllocationCallbacks, 
+        ma_flanger_node *pFlangerNode) {
     if (pFlangerNode == NULL) return MA_INVALID_ARGS;
 
     memset(pFlangerNode, 0, sizeof *pFlangerNode);
 
-    ma_result result = ma_flanger_init(pConfig->flangerConfig, pAllocationCallbacks, pFlangerNode->flanger);
+    ma_result result = 
+        ma_flanger_init(pConfig->flangerConfig, pAllocationCallbacks, pFlangerNode->flanger);
     if (result != MA_SUCCESS) return result;
 
     ma_node_config baseConfig = pConfig->nodeConfig;
@@ -75,27 +92,30 @@ ma_result ma_flanger_node_init (
     baseConfig.pInputChannels = &pConfig->flangerConfig.channels;
     baseConfig.pOutputChannels = &pConfig->flangerConfig.channels;
 
-    result = ma_node_init(pNodeGraph, &baseConfig, pAllocationCallbacks, &pFlangerNode->baseNode);
+    result = 
+        ma_node_init(pNodeGraph, &baseConfig, pAllocationCallbacks, &pFlangerNode->baseNode);
     if (result != MA_SUCCESS) ma_flanger_uninit(&pFlangerNode->flanger, pAllocationCallbacks);
 
     return result;
 }
 
 void ma_flanger_node_uninit (
-    ma_flanger_node *pFlangerNode, 
-    const ma_allocation_callbacks *pAllocationCallbacks) {
+        ma_flanger_node *pFlangerNode, 
+        const ma_allocation_callbacks *pAllocationCallbacks) {
     if (pFlangerNode == NULL) return;
     ma_node_uninit(pFlangerNode, pAllocationCallbacks);
     ma_flanger_uninit(&pFlangerNode->flanger, pAllocationCallbacks);
 }
 
 void ma_flanger_node_process_pcm_frames (
-    ma_node *pNode,
-    const float **ppFramesIn,
-    ma_uint32 *pFrameCountIn,
-    float **ppFramesOut,
-    ma_uint32 *pFrameCountOut) {
-
+        ma_node *pNode,
+        const float **ppFramesIn,
+        ma_uint32 *pFrameCountIn,
+        float **ppFramesOut,
+        ma_uint32 *pFrameCountOut) {
+    ma_flanger_node *pFlangerNode = (ma_flanger_node *)pNode;
+    (void)pFrameCountIn;
+    ma_flanger_process_pcm_frames(&pFlangerNode->flanger, ppFramesOut[0], ppFramesIn[0], *pFrameCountOut);
 }
 
 void ma_flanger_set_rate(ma_flanger *pFlanger, float value) {
