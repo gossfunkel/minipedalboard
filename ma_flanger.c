@@ -1,4 +1,10 @@
 #include "ma_flanger.h"
+#include <string.h>
+#define _USE_MATH_DEFINES
+#include <math.h>
+#define TAU (M_PI * 2.)
+
+#define secsToFrames(seconds, sampleRate) (ma_uint32)((seconds) * (sampleRate) * .001f)
 
 ma_flanger_config ma_flanger_config_init (
         ma_uint32 channels, 
@@ -27,13 +33,15 @@ ma_result ma_flanger_init (
     memset(pFlanger, 0, sizeof *pFlanger);
 
     if (pConfig == NULL) return MA_INVALID_ARGS;
-    if (pConfig->rate < MIN_DELAY || pConfig->rate > MAX_DELAY) return MA_INVALID_ARGS;
-    if (pConfig->depth < 0.f      || pConfig->depth  > 1.f) return MA_INVALID_ARGS;
-    if (pConfig->wetDry < 0.f     || pConfig->wetDry > 1.f) return MA_INVALID_ARGS;
+    if (pConfig->rate < MIN_RATE   || pConfig->rate > MAX_RATE)  return MA_INVALID_ARGS;
+    if (pConfig->depth < MIN_DELAY || pConfig->depth > MAX_DELAY) return MA_INVALID_ARGS;
+    if (pConfig->dryWet < 0.f      || pConfig->dryWet > 1.f)       return MA_INVALID_ARGS;
 
     pFlanger->config = *pConfig;
-    pFlanger->bufferSizeInFrames = (ma_uint32)(0.001f * MAX_DELAY * pConfig->sampleRate);
+    pFlanger->bufferSizeInFrames = secsToFrames(MAX_DELAY, pConfig->sampleRate);
+    pFlanger->currentDelayInFrames = 0;
     pFlanger->cursor = 0;
+    pFlanger->timer = 0.;
 
     pFlanger->pBuffer = 
         (float *)ma_malloc((size_t)(pFlanger->bufferSizeInFrames * 
@@ -56,7 +64,31 @@ ma_result ma_flanger_process_pcm_frames (
         void *pFramesOut,
         const void *pFramesIn,
         ma_uint32 frameCount) {
-    // TODO
+    float *pFramesOutF32 = (float *)pFramesOut;
+    const float *pFramesInF32 = (const float *)pFramesIn;
+    ma_uint32 channels = pFlanger->config.channels;
+    ma_uint32 iFrame = 0;
+    ma_uint32 depthMaxFrame = secsToFrames(pFlanger->config.depth, pFlanger->config.sampleRate);
+    ma_uint32 period = secsToFrames(1.f/pFlanger->config.rate, pFlanger->config.sampleRate);
+    double spf = 1. / (double)pFlanger->config.sampleRate;
+    float wetDry = 1.f - pFlanger->config.dryWet;
+
+    if (pFlanger == NULL || pFramesOut == NULL || pFramesIn == NULL) return MA_INVALID_ARGS;
+
+    while (iFrame < channels * frameCount) {
+        for (ma_uint32 iChannel = 0; iChannel < channels; ++iChannel)
+            pFramesOutF32[iChannel] = 
+                pFlanger->pBuffer[pFlanger->cursor * channels + iChannel] * pFlanger->config.depth * pFlanger->config.dryWet
+                + pFramesInF32[iFrame] * wetDry;
+        
+        pFlanger->timer = fmod(pFlanger->timer + spf, period);
+        pFlanger->currentDelayInFrames = (ma_uint32)(-cos(TAU * pFlanger->timer/period)) * depthMaxFrame/2 + depthMaxFrame/2;
+        pFlanger->cursor = (pFlanger->cursor + 1) % pFlanger->currentDelayInFrames;
+        pFramesInF32 += channels;
+        pFramesOutF32 += channels;
+    }
+
+    return MA_SUCCESS;
 }
 
 ma_flanger_node_config ma_flanger_node_config_init (
@@ -65,7 +97,7 @@ ma_flanger_node_config ma_flanger_node_config_init (
         float rate, 
         float depth, 
         float dryWet) {
-    ma_delay_node_config config;
+    ma_flanger_node_config config;
 
     config.nodeConfig = ma_node_config_init();
     config.flangerConfig = 
@@ -84,7 +116,7 @@ ma_result ma_flanger_node_init (
     memset(pFlangerNode, 0, sizeof *pFlangerNode);
 
     ma_result result = 
-        ma_flanger_init(pConfig->flangerConfig, pAllocationCallbacks, pFlangerNode->flanger);
+        ma_flanger_init(&pConfig->flangerConfig, pAllocationCallbacks, &pFlangerNode->flanger);
     if (result != MA_SUCCESS) return result;
 
     ma_node_config baseConfig = pConfig->nodeConfig;
@@ -135,11 +167,11 @@ float ma_flanger_get_depth(const ma_flanger *pFlanger) {
     return pFlanger->config.depth;
 }
 
-void ma_flanger_set_wet_dry(ma_flanger *pFlanger, float value) {
+void ma_flanger_set_dry_wet(ma_flanger *pFlanger, float value) {
     if (value < 0.f || value > 1.f) return;
     pFlanger->config.dryWet = value;
 }
 
-float ma_flanger_get_wet_dry(const ma_flanger *pFlanger) {
+float ma_flanger_get_dry_wet(const ma_flanger *pFlanger) {
     return pFlanger->config.dryWet;
 }

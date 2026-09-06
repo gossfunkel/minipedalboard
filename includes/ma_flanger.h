@@ -3,6 +3,9 @@
 #define MIN_DELAY 0.f
 #define MAX_DELAY 5.f
 
+#define MIN_RATE 0.01f
+#define MAX_RATE 20.f
+
 typedef struct {
     ma_uint32 channels;
     ma_uint32 sampleRate;
@@ -14,7 +17,9 @@ typedef struct {
 typedef struct {
     ma_flanger_config config;
     ma_uint32 cursor;
+    double timer;
     ma_uint32 bufferSizeInFrames;
+    ma_uint32 currentDelayInFrames;
     float *pBuffer;
 } ma_flanger;
 
@@ -62,8 +67,8 @@ void ma_flanger_set_rate(ma_flanger *pFlanger, float value);
 float ma_flanger_get_rate(const ma_flanger *pFlanger);
 void ma_flanger_set_depth(ma_flanger *pFlanger, float value);
 float ma_flanger_get_depth(const ma_flanger *pFlanger);
-void ma_flanger_set_wet_dry(ma_flanger *pFlanger, float value);
-float ma_flanger_get_wet_dry(const ma_flanger *pFlanger);
+void ma_flanger_set_dry_wet(ma_flanger *pFlanger, float value);
+float ma_flanger_get_dry_wet(const ma_flanger *pFlanger);
 
 static ma_node_vtable ma_flanger_node_vtable = {
     ma_flanger_node_process_pcm_frames,
