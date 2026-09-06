@@ -68,7 +68,7 @@ ma_result ma_flanger_process_pcm_frames (
     const float *pFramesInF32 = (const float *)pFramesIn;
     ma_uint32 channels = pFlanger->config.channels;
     ma_uint32 iFrame = 0;
-    ma_uint32 depthMaxFrame = secsToFrames(pFlanger->config.depth, pFlanger->config.sampleRate);
+    ma_uint32 hDepthMaxFrame = secsToFrames(pFlanger->config.depth, pFlanger->config.sampleRate)/2;
     ma_uint32 period = secsToFrames(1.f/pFlanger->config.rate, pFlanger->config.sampleRate);
     double spf = 1. / (double)pFlanger->config.sampleRate;
     float wetDry = 1.f - pFlanger->config.dryWet;
@@ -79,10 +79,10 @@ ma_result ma_flanger_process_pcm_frames (
         for (ma_uint32 iChannel = 0; iChannel < channels; ++iChannel)
             pFramesOutF32[iChannel] = 
                 pFlanger->pBuffer[pFlanger->cursor * channels + iChannel] * pFlanger->config.depth * pFlanger->config.dryWet
-                + pFramesInF32[iFrame] * wetDry;
+                + pFramesInF32[iFrame * channels + iChannel] * wetDry;
         
         pFlanger->timer = fmod(pFlanger->timer + spf, period);
-        pFlanger->currentDelayInFrames = (ma_uint32)(-cos(TAU * pFlanger->timer/period)) * depthMaxFrame/2 + depthMaxFrame/2;
+        pFlanger->currentDelayInFrames = (ma_uint32)(-cos(TAU * pFlanger->timer/period)) * hDepthMaxFrame + hDepthMaxFrame;
         pFlanger->cursor = (pFlanger->cursor + 1) % pFlanger->currentDelayInFrames;
         pFramesInF32 += channels;
         pFramesOutF32 += channels;
