@@ -69,7 +69,7 @@ ma_result ma_flanger_process_pcm_frames (
     ma_uint32 channels = pFlanger->config.channels;
     ma_uint32 iFrame = 0;
     ma_uint32 hDepthMaxFrame = secsToFrames(pFlanger->config.depth, pFlanger->config.sampleRate)/2;
-    ma_uint32 period = secsToFrames(1.f/pFlanger->config.rate, pFlanger->config.sampleRate);
+    double period = 1. / pFlanger->config.rate;
     double spf = 1. / (double)pFlanger->config.sampleRate;
     float wetDry = 1.f - pFlanger->config.dryWet;
 
