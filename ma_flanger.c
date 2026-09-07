@@ -4,7 +4,7 @@
 #include <math.h>
 #define TAU (M_PI * 2.)
 
-#define secsToFrames(seconds, sampleRate) (ma_uint32)((seconds) * (sampleRate) * .001f)
+#define secsToFrames(seconds, sampleRate) (ma_uint32)((seconds) * (sampleRate))
 
 ma_flanger_config ma_flanger_config_init (
         ma_uint32 channels, 
@@ -39,9 +39,9 @@ ma_result ma_flanger_init (
 
     pFlanger->config = *pConfig;
     pFlanger->bufferSizeInFrames = secsToFrames(MAX_DELAY, pConfig->sampleRate);
-    pFlanger->currentDelayInFrames = 0;
     pFlanger->cursor = 0;
     pFlanger->timer = 0.;
+    pFlanger->currentDelayInFrames = 1;
 
     pFlanger->pBuffer = 
         (float *)ma_malloc((size_t)(pFlanger->bufferSizeInFrames * 
@@ -69,8 +69,8 @@ ma_result ma_flanger_process_pcm_frames (
     ma_uint32 channels = pFlanger->config.channels;
     ma_uint32 iFrame = 0;
     ma_uint32 hDepthMaxFrame = secsToFrames(pFlanger->config.depth, pFlanger->config.sampleRate)/2;
-    double period = 1. / pFlanger->config.rate;
-    double spf = 1. / (double)pFlanger->config.sampleRate;
+    //double period = 1. / (double)pFlanger->config.rate;
+    //double spf = 1. / (double)pFlanger->config.sampleRate;
     float wetDry = 1.f - pFlanger->config.dryWet;
 
     if (pFlanger == NULL || pFramesOut == NULL || pFramesIn == NULL) return MA_INVALID_ARGS;
@@ -78,12 +78,13 @@ ma_result ma_flanger_process_pcm_frames (
     while (iFrame < channels * frameCount) {
         for (ma_uint32 iChannel = 0; iChannel < channels; ++iChannel)
             pFramesOutF32[iChannel] = 
-                pFlanger->pBuffer[pFlanger->cursor * channels + iChannel] * pFlanger->config.depth * pFlanger->config.dryWet
-                + pFramesInF32[iFrame * channels + iChannel] * wetDry;
+                pFlanger->pBuffer[pFlanger->cursor * channels + iChannel] * pFlanger->config.dryWet
+                + pFramesInF32[iChannel] * wetDry;
         
-        pFlanger->timer = fmod(pFlanger->timer + spf, period);
-        pFlanger->currentDelayInFrames = (ma_uint32)(-cos(TAU * pFlanger->timer/period)) * hDepthMaxFrame + hDepthMaxFrame;
-        pFlanger->cursor = (pFlanger->cursor + 1) % pFlanger->currentDelayInFrames;
+        //pFlanger->timer = fmod(pFlanger->timer + spf, period);
+        //pFlanger->currentDelayInFrames = (ma_uint32)(-cos(TAU * pFlanger->timer/period) * (double)hDepthMaxFrame) + hDepthMaxFrame;
+        //pFlanger->cursor = (pFlanger->cursor + 1) % pFlanger->currentDelayInFrames;
+        pFlanger->cursor = (pFlanger->cursor + 1) % pFlanger->bufferSizeInFrames;
         pFramesInF32 += channels;
         pFramesOutF32 += channels;
     }
