@@ -75,7 +75,7 @@ ma_result ma_flanger_process_pcm_frames (
 
     if (pFlanger == NULL || pFramesOut == NULL || pFramesIn == NULL) return MA_INVALID_ARGS;
 
-    while (iFrame < channels * frameCount) {
+    while (iFrame < frameCount) {
         for (ma_uint32 iChannel = 0; iChannel < channels; ++iChannel)
             pFramesOutF32[iChannel] = 
                 pFlanger->pBuffer[pFlanger->cursor * channels + iChannel] * pFlanger->config.dryWet
@@ -87,6 +87,7 @@ ma_result ma_flanger_process_pcm_frames (
         pFlanger->cursor = (pFlanger->cursor + 1) % pFlanger->bufferSizeInFrames;
         pFramesInF32 += channels;
         pFramesOutF32 += channels;
+        iFrame++;
     }
 
     return MA_SUCCESS;
