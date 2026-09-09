@@ -1,6 +1,7 @@
 #include "ma_normalize.h"
 #include <string.h>
 #include <math.h>
+#include <stdbool.h>
 
 ma_normalize_config ma_normalize_config_init(ma_uint32 channels, ma_uint32 sampleRate, float fade_time, float threshold, float max_amp) {
     ma_normalize_config config;
@@ -32,7 +33,7 @@ ma_result ma_normalize_init(
     pNormalize->config 			   = *pConfig;
     pNormalize->peak_level 		   = 0.f;
     pNormalize->time_on 		   = 0.f;
-    pNormalize->time_off 		   = 0.f;
+    pNormalize->time_off 		   = pConfig->fade_time;
 
     return MA_SUCCESS;
 }
@@ -51,28 +52,34 @@ ma_result ma_normalize_process_pcm_frames(
     float *pFramesOutF32 = (float *)pFramesOut;
     const float *pFramesInF32 = (const float *)pFramesIn;
 
-    float fade_in = 0.f;
-    float fade_out = 0.f;
-    float gain = 1.f;
+    float fade_in;
+    float fade_out;
     // seconds per frame (frame length in seconds)
     float spf = 1.f/pNormalize->config.sampleRate;
 
+    bool peak_detected = false;
     for (ma_uint32 iFrame = 0; iFrame < frameCount; iFrame += pNormalize->config.channels) {
         for (ma_uint32 iChannel = 0; iChannel < pNormalize->config.channels; ++iChannel) {
+        	// need some sort of hold when hitting peak to prevent oscillating
+        	if (pFramesInF32[iFrame + iChannel] > pNormalize->config.threshold) peak_detected = true;
         	pNormalize->peak_level = fmax(pNormalize->peak_level, pFramesInF32[iFrame + iChannel]);
         	if (pNormalize->peak_level > pNormalize->config.threshold) {
-        		pNormalize->time_on += spf; // FIXME this doesn't work for multi-channel sounds
-        		fade_in = fmin(pNormalize->time_on/pNormalize->config.fade_time, 1.f);
-        		gain = fmin(fade_in * (1.f - pNormalize->peak_level), pNormalize->config.max_amp);
-        		pNormalize->time_off = 0.f;
+        		fade_in = fmin(pNormalize->time_on/0.002f, 1.f);
+        		pNormalize->current_gain = fmin(fade_in * 1.f/pNormalize->peak_level, pNormalize->config.max_amp);
         	} else {
-        		pNormalize->time_off += spf; // FIXME this doesn't work for multi-channel sounds
         		fade_out = fmin(1.f - pNormalize->time_off/pNormalize->config.fade_time, 1.f);
-        		gain = fmax(1.f, fmin(fade_out * (1.f - pNormalize->peak_level), pNormalize->config.max_amp));
-        		pNormalize->time_on = 0.f;
+        		pNormalize->current_gain = fmax(1.f, fmin(fade_out * 1.f/pNormalize->peak_level, pNormalize->config.max_amp));
         	}
-            pFramesOutF32[iFrame + iChannel] = pFramesInF32[iFrame + iChannel] * gain;
+            pFramesOutF32[iFrame + iChannel] = pFramesInF32[iFrame + iChannel] * pNormalize->current_gain;
         }
+        if (peak_detected) {
+        	pNormalize->time_on += spf;
+        	pNormalize->time_off = 0.f;
+        } else {
+        	pNormalize->time_off += spf;
+        	pNormalize->time_on = 0.f;
+        }
+        peak_detected = false;
     }
 
     return MA_SUCCESS;

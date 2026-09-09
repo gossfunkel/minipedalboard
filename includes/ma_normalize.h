@@ -17,6 +17,7 @@ typedef struct {
 typedef struct {
     ma_normalize_config config;
     float peak_level;
+    float current_gain;
     float time_on;
     float time_off;
 } ma_normalize;
