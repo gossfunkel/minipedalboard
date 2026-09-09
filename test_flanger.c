@@ -26,7 +26,7 @@ int main() {
         return 2;
     }
 
-    ma_flanger_node_config dist_conf = ma_flanger_node_config_init(CHANNELS, SAMPLERATE, 2.f, 3.f, 1.f);
+    ma_flanger_node_config dist_conf = ma_flanger_node_config_init(CHANNELS, SAMPLERATE, .2f, 3.f, 1.f);
 
     if ((result = ma_flanger_node_init(&engine.nodeGraph, &dist_conf, NULL, &flange_node)) != MA_SUCCESS) {
         if (result == MA_INVALID_ARGS) {

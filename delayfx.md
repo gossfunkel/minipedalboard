@@ -29,3 +29,25 @@ parameters:
 - **chorus**: rate, depth, delay, feedback, dry/wet
 - **phaser**: depth, dry/wet
 - **flanger**: rate, depth, dry/wet
+
+## Delay vs Phase
+A delay unit creates a phase kickback - i.e. it reproduces the original wave out-of-phase with the original. 
+This phase difference may be a multiple of tau, i.e. in-phase with a regular signal (like a sine wave). 
+Phasers and flangers ensure that the phase difference is small enough such that there will be comb filtering 
+on irregular signals (e.g. human voice, transients like drums and sound effects, music). 
+
+The biggest challenge here is the quantised nature of the signal. Phase differences in continuous signals 
+emerge naturally from many electronic signal paths, but with a discrete-time signal, we face the problem 
+that samples cannot be played out-of-time.
+
+For example:
+```
+a: |   |   |   |
+b:  |   |   |   |
+```
+The sound card of the computer is locked to a sample rate (usually 44100 or 48000 hz). It cannot produce an 
+output with extra samples in-between. So if stream `a` is at our sampling rate, and we introduce a phase 
+kickback of less than a sample yielding stream `b`, we have no way to output both streams concurrently at 
+the timings given. Instead, `b` will have to be interpolated to give the *effect of* phase knockback, 
+without actually producing a secondary signal. The point is to interfere with `a` such that it *appears to 
+be* the sum of `a` and `b`.

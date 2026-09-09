@@ -67,6 +67,27 @@ ma_result ma_flanger_process_pcm_frames (
     float *pFramesOutF32 = (float *)pFramesOut;
     const float *pFramesInF32 = (const float *)pFramesIn;
     ma_uint32 channels = pFlanger->config.channels;
+
+    /* 
+     * each frame should interpolate the closest frames
+     * 
+     * play rate in buffer = original sample rate
+     * ratio bFrames/inFrames is the depth (relative speed of buffer to input)
+            e.g. half speed buffer -> 180 phase diff at period. 5s (fps/2) behind at 1s. 
+                 at 48000fps, 24000 frames behind at .5s
+                 so of the 24000 played frames, 12000 are absolutely unaligned
+                 2 output frames per 3 input frames
+            e.g. 1ms depth & 1hz rate -> at .5s, buffer is 1ms delayed (fps/1000 frames delay)
+                 at 48000fps, 48 frames behind at .5s
+                 so of the 24000 played frames, 23,952 are absolutely unaligned
+                 1 output frame per 500 input frames?
+     * buffer speed determined by depth
+     * buffer speed inversion point determined by rate
+
+     use ma_resampler - it allows realtime resetting of ratio with ma_resampler_set_rate_ratio()
+     or ma_linear_resampler_interpolate_frame_f32()
+     note: uses ma_mix_f32_fast
+     */
     
     ma_uint32 hDepthMaxFrame = channels * secsToFrames(pFlanger->config.depth, pFlanger->config.sampleRate)/2;
     double period = 1. / (double)pFlanger->config.rate;

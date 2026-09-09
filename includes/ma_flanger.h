@@ -1,10 +1,10 @@
 #include "miniaudio.h"
 
 #define MIN_DELAY 0.f
-#define MAX_DELAY 5.f
+#define MAX_DELAY 20.f
 
 #define MIN_RATE 0.01f
-#define MAX_RATE 20.f
+#define MAX_RATE 5.f
 
 typedef struct {
     ma_uint32 channels;
