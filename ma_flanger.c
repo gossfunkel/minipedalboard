@@ -64,12 +64,16 @@ ma_result ma_flanger_process_pcm_frames (
         void *pFramesOut,
         const void *pFramesIn,
         ma_uint32 frameCount) {
+    if (pFlanger == NULL || pFramesOut == NULL || pFramesIn == NULL) return MA_INVALID_ARGS;
     float *pFramesOutF32 = (float *)pFramesOut;
     const float *pFramesInF32 = (const float *)pFramesIn;
     ma_uint32 channels = pFlanger->config.channels;
 
     /* 
      * each frame should interpolate the closest frames
+     * if we only modify some frames, the signal will be unevenly stretched
+     * so all frames must undergo some interpolation other than those which
+     *  exactly alias to the phase-altered signal
      * 
      * play rate in buffer = original sample rate
      * ratio bFrames/inFrames is the depth (relative speed of buffer to input)
@@ -94,7 +98,6 @@ ma_result ma_flanger_process_pcm_frames (
     double spf = 1. / (double)pFlanger->config.sampleRate;
     //float wetDry = 1.f - pFlanger->config.dryWet;
 
-    if (pFlanger == NULL || pFramesOut == NULL || pFramesIn == NULL) return MA_INVALID_ARGS;
 
     for (ma_uint32 iFrame = 0; iFrame < frameCount; iFrame++) {
         for (ma_uint32 iChannel = 0; iChannel < channels; ++iChannel) {

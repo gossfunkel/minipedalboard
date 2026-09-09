@@ -22,6 +22,10 @@ flanger: miniaudio
 	$(CC) -c ma_flanger.c $(CFLAGS) -o ma_flanger.o
 	$(CC) test_flanger.c miniaudio.o ma_flanger.o $(CFLAGS) -o test_flanger.exe
 
+norm: miniaudio
+	$(CC) -c ma_normalize.c $(CFLAGS) -o ma_normalize.o
+	$(CC) test_normalize.c miniaudio.o ma_normalize.o $(CFLAGS) -o test_norm.exe
+
 clean:
 	rm miniaudio.o
 	rm ma_comp.o
