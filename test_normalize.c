@@ -16,7 +16,11 @@ int main() {
 
     printf("Welcome! Initialising...\n");
 
-    if ((result = ma_engine_init(NULL, &engine)) != MA_SUCCESS) {
+    ma_engine_config engineConfig = ma_engine_config_init();
+    engineConfig.channels   = 2;
+    engineConfig.sampleRate = 48000;
+
+    if ((result = ma_engine_init(&engineConfig, &engine)) != MA_SUCCESS) {
         fprintf(stderr, "Failed to initialise engine! Error: %d\n", result);
         return 1;
     }

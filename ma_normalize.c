@@ -52,39 +52,41 @@ ma_result ma_normalize_process_pcm_frames(
     float *pFramesOutF32 = (float *)pFramesOut;
     const float *pFramesInF32 = (const float *)pFramesIn;
 
-    float fade_in;
+    //float fade_in;
     //float fade_out;
     // seconds per frame (frame length in seconds)
     float spf = 1.f/pNormalize->config.sampleRate;
 
-    float fade_time_s = pNormalize->config.fade_time * 1000.f;
+    float fade_time_s = pNormalize->config.fade_time / 1000.f;
 
-    bool peak_detected = false;
+    bool peak_detected;
     for (ma_uint32 iFrame = 0; iFrame < frameCount; iFrame += pNormalize->config.channels) {
+        peak_detected = false;
         for (ma_uint32 iChannel = 0; iChannel < pNormalize->config.channels; ++iChannel) {
         	// need some sort of hold when hitting peak to prevent oscillating
         	if (pFramesInF32[iFrame + iChannel] > pNormalize->config.threshold) {
         		peak_detected = true;
-        		pNormalize->peak_level = fmax(pNormalize->peak_level, pFramesInF32[iFrame + iChannel]);
+        		pNormalize->peak_level = fmax(pNormalize->peak_level, abs(pFramesInF32[iFrame + iChannel]));
         	}
         	if (pNormalize->peak_level > pNormalize->config.threshold) {
-        		fade_in = fmin(pNormalize->time_on/0.002f, 1.f);
-        		pNormalize->current_gain = fmin(fade_in * 1.f/pNormalize->peak_level, pNormalize->config.max_amp);
+        		//fade_in = fmin(pNormalize->time_on/fade_time_s, 1.f);
+        		pNormalize->current_gain = fmax(1.f, fmin(1.f/pNormalize->peak_level, 
+        													pNormalize->config.max_amp));
         	} else {
         		//fade_out = fmin(1.f - pNormalize->time_off/fade_time_s, 1.f);
-        		pNormalize->current_gain = fmax(1.f, fmin(1.f/pNormalize->peak_level, pNormalize->config.max_amp));
+        		pNormalize->current_gain = fmax(1.f, fmin(1.f/pNormalize->peak_level, 
+        													pNormalize->config.max_amp));
         	}
             pFramesOutF32[iFrame + iChannel] = pFramesInF32[iFrame + iChannel] * pNormalize->current_gain;
         }
-        if (peak_detected || pNormalize->time_on > fade_time_s) {
+        if (peak_detected || (0.f < pNormalize->time_on && pNormalize->time_on < fade_time_s)) {
         	pNormalize->time_on += spf;
         	pNormalize->time_off = 0.f;
         } else {
         	pNormalize->time_off += spf;
-        	pNormalize->peak_level = fmax(0.f, fmin(1.f - pNormalize->time_off/fade_time_s, 1.f));
+        	pNormalize->peak_level *= fmax(0.f, fmin(1.f - pNormalize->time_off/fade_time_s, 1.f));
         	pNormalize->time_on = 0.f;
         }
-        peak_detected = false;
     }
 
     return MA_SUCCESS;
