@@ -69,11 +69,3 @@ void ma_flanger_set_depth(ma_flanger *pFlanger, float value);
 float ma_flanger_get_depth(const ma_flanger *pFlanger);
 void ma_flanger_set_dry_wet(ma_flanger *pFlanger, float value);
 float ma_flanger_get_dry_wet(const ma_flanger *pFlanger);
-
-static ma_node_vtable ma_flanger_node_vtable = {
-    ma_flanger_node_process_pcm_frames,
-    NULL,
-    1, // input bus
-    1, // output bus
-    0  // default flags
-};

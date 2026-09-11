@@ -106,7 +106,7 @@ int main() {
     ma_flanger_node_uninit(&flange_node, NULL);
     ma_engine_uninit(&engine);
 
-    printf("Goodbye!");
+    printf("Goodbye!\n");
 
     return 0;
 }

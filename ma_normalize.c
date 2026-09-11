@@ -3,6 +3,14 @@
 #include <math.h>
 #include <stdbool.h>
 
+static ma_node_vtable ma_normalize_node_vtable = {
+    ma_normalize_node_process_pcm_frames,
+    NULL,
+    1, // input bus
+    1, // output bus
+    0  // default flags
+};
+
 ma_normalize_config ma_normalize_config_init(ma_uint32 channels, ma_uint32 sampleRate, float fade_time, float threshold, float max_amp) {
     ma_normalize_config config;
     memset(&config, 0, sizeof config);
@@ -33,7 +41,7 @@ ma_result ma_normalize_init(
     pNormalize->config 			   = *pConfig;
     pNormalize->peak_level 		   = 0.f;
     pNormalize->time_on 		   = 0.f;
-    pNormalize->time_off 		   = pConfig->fade_time;
+    pNormalize->time_off 		   = pConfig->fade_time / 1000.f;
 
     return MA_SUCCESS;
 }
@@ -54,16 +62,15 @@ ma_result ma_normalize_process_pcm_frames(
 
     //float fade_in;
     //float fade_out;
-    // seconds per frame (frame length in seconds)
-    float spf = 1.f/pNormalize->config.sampleRate;
+    // milliseconds per frame (frame length in milliseconds)
+    float mspf = 1000.f/pNormalize->config.sampleRate;
 
-    float fade_time_s = pNormalize->config.fade_time / 1000.f;
+    //float fade_time_s = pNormalize->config.fade_time / 1000.f;
 
     bool peak_detected;
     for (ma_uint32 iFrame = 0; iFrame < frameCount; iFrame += pNormalize->config.channels) {
         peak_detected = false;
         for (ma_uint32 iChannel = 0; iChannel < pNormalize->config.channels; ++iChannel) {
-        	// need some sort of hold when hitting peak to prevent oscillating
         	if (pFramesInF32[iFrame + iChannel] > pNormalize->config.threshold) {
         		peak_detected = true;
         		pNormalize->peak_level = 
@@ -72,19 +79,19 @@ ma_result ma_normalize_process_pcm_frames(
         	pNormalize->current_gain = 
         		fmax(1.f, fmin(1.f/pNormalize->peak_level, pNormalize->config.max_amp));
         	pNormalize->current_gain = (pNormalize->time_on > 0.f) 		?
-        	1.f + 		 fmin(pNormalize->time_on  / fade_time_s, 1.f) 
-        						   * (pNormalize->current_gain - 1.f) 	:
-        	1.f + (1.f - fmin(pNormalize->time_off / fade_time_s, 1.f)) 
-        						   * (pNormalize->current_gain - 1.f);
+        		1.f + 		 fmin(pNormalize->time_on  / .1f, 1.f) 
+        					   * (pNormalize->current_gain  - 1.f) 	:
+        		1.f + (1.f - fmin(pNormalize->time_off / .1f, 1.f)) 
+        					   * (pNormalize->current_gain  - 1.f);
             pFramesOutF32[iFrame + iChannel] = pFramesInF32[iFrame + iChannel] * pNormalize->current_gain;
         }
-        if (peak_detected || (0.f < pNormalize->time_on && pNormalize->time_on < fade_time_s)) {
-        	pNormalize->time_on += spf;
+        if (peak_detected || (0.f < pNormalize->time_on && pNormalize->time_on < pNormalize->config.fade_time + .1f)) {
         	pNormalize->time_off = 0.f;
+        	pNormalize->time_on += mspf;
         } else {
-        	pNormalize->time_off += spf;
-        	pNormalize->peak_level *= fmax(0.f, fmin(1.f - pNormalize->time_off/fade_time_s, 1.f));
         	pNormalize->time_on = 0.f;
+        	pNormalize->time_off += mspf;
+        	pNormalize->peak_level *= fmax(0.f, fmin(1.f - pNormalize->time_off/0.1f, 1.f));
         }
     }
 

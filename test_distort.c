@@ -114,7 +114,7 @@ int main() {
     ma_distort_node_uninit(&dist_node, NULL);
     ma_engine_uninit(&engine);
 
-    printf("Goodbye!");
+    printf("Goodbye!\n");
 
     return 0;
 }

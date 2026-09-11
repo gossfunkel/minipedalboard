@@ -3,6 +3,14 @@
 #include <string.h>
 #include <stdlib.h>
 
+static ma_node_vtable ma_compress_node_vtable = {
+    ma_compress_node_process_pcm_frames,
+    NULL,
+    1, // input bus
+    1, // output bus
+    0  // default flags
+};
+
 /*ma_result ma_compress_init(const ma_compress_config *pConfig, const ma_allocation_callbacks *pAllocationCallbacks, ma_compress *pCompress) {
     if (pCompress == NULL) return MA_INVALID_ARGS;
 

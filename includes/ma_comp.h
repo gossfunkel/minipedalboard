@@ -92,11 +92,3 @@ void ma_compress_node_set_release(ma_compress_node *pCompress, float value);
 float ma_compress_node_get_release(const ma_compress_node *pCompress);
 void ma_compress_node_set_wet_dry(ma_compress_node *pCompress, float value);
 float ma_compress_node_get_wet_dry(const ma_compress_node *pCompress);
-
-static ma_node_vtable ma_compress_node_vtable = {
-    ma_compress_node_process_pcm_frames,
-    NULL,
-    1, // input bus
-    1, // output bus
-    0  // default flags
-};

@@ -1,7 +1,7 @@
 CFLAGS := -std=c99 -Iincludes -Wall -msse2 -mavx2 -lm
 CC := gcc
 
-all: miniaudio compress distort repitch flanger
+all: miniaudio compress distort flanger norm
 
 miniaudio:
 	$(CC) -c miniaudio.c $(CFLAGS) -o miniaudio.o
@@ -14,10 +14,6 @@ distort: miniaudio
 	$(CC) -c ma_distort.c $(CFLAGS) -o ma_distort.o
 	$(CC) test_distort.c miniaudio.o ma_distort.o $(CFLAGS) -o test_distort.exe
 
-repitch: miniaudio
-	$(CC) -c ma_repitch.c $(CFLAGS) -o ma_repitch.o
-	$(CC) test_repitch.c miniaudio.o ma_repitch.o $(CFLAGS) -o test_repitch.exe
-
 flanger: miniaudio
 	$(CC) -c ma_flanger.c $(CFLAGS) -o ma_flanger.o
 	$(CC) test_flanger.c miniaudio.o ma_flanger.o $(CFLAGS) -o test_flanger.exe
@@ -26,11 +22,19 @@ norm: miniaudio
 	$(CC) -c ma_normalize.c $(CFLAGS) -o ma_normalize.o
 	$(CC) test_normalize.c miniaudio.o ma_normalize.o $(CFLAGS) -o test_norm.exe
 
+repitch: miniaudio
+	$(CC) -c ma_repitch.c $(CFLAGS) -o ma_repitch.o
+	$(CC) test_repitch.c miniaudio.o ma_repitch.o $(CFLAGS) -o test_repitch.exe
+
 clean:
 	rm miniaudio.o
 	rm ma_comp.o
 	rm ma_distort.o
+	rm ma_flanger.o
+	rm ma_normalize.o
 	rm ma_repitch.o
 	rm test_comp.exe
 	rm test_distort.exe
+	rm test_flanger.exe
+	rm test_norm.exe
 	rm test_repitch.exe

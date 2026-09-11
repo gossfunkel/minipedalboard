@@ -88,11 +88,3 @@ void ma_distort_set_mode(ma_distort *pDistort, ma_uint32 value);
 ma_uint32 ma_distort_get_mode(const ma_distort *pDistort);
 void ma_distort_set_wet_dry(ma_distort *pDistort, float value);
 float ma_distort_get_wet_dry(const ma_distort *pDistort);
-
-static ma_node_vtable ma_distort_node_vtable = {
-    ma_distort_node_process_pcm_frames,
-    NULL,
-    1, // input bus
-    1, // output bus
-    0  // default flags
-};

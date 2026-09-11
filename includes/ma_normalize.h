@@ -68,11 +68,3 @@ void ma_normalize_set_threshold(ma_normalize *pNormalize, float value);
 float ma_normalize_get_threshold(const ma_normalize *pNormalize);
 void ma_normalize_set_max_amp(ma_normalize *pNormalize, float value);
 float ma_normalize_get_max_amp(const ma_normalize *pNormalize);
-
-static ma_node_vtable ma_normalize_node_vtable = {
-    ma_normalize_node_process_pcm_frames,
-    NULL,
-    1, // input bus
-    1, // output bus
-    0  // default flags
-};

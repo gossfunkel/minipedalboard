@@ -6,6 +6,14 @@
 
 #define secsToFrames(seconds, sampleRate) (ma_uint32)((seconds) * (sampleRate))
 
+static ma_node_vtable ma_flanger_node_vtable = {
+    ma_flanger_node_process_pcm_frames,
+    NULL,
+    1, // input bus
+    1, // output bus
+    0  // default flags
+};
+
 ma_flanger_config ma_flanger_config_init (
         ma_uint32 channels, 
         ma_uint32 sampleRate, 

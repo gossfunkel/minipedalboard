@@ -30,7 +30,7 @@ int main() {
         return 2;
     }
 
-    ma_normalize_node_config dist_conf = ma_normalize_node_config_init(CHANNELS, SAMPLERATE, .4f, .1f, 100.f);
+    ma_normalize_node_config dist_conf = ma_normalize_node_config_init(CHANNELS, SAMPLERATE, .4f, .2f, 10.f);
 
     if ((result = ma_normalize_node_init(&engine.nodeGraph, &dist_conf, NULL, &norm_node)) != MA_SUCCESS) {
         if (result == MA_INVALID_ARGS) {
@@ -110,7 +110,7 @@ int main() {
     ma_normalize_node_uninit(&norm_node, NULL);
     ma_engine_uninit(&engine);
 
-    printf("Goodbye!");
+    printf("Goodbye!\n");
 
     return 0;
 }

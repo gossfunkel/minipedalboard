@@ -98,7 +98,7 @@ int main() {
     ma_compress_node_uninit(&comp_node, NULL);
     ma_engine_uninit(&engine);
 
-    printf("Goodbye!");
+    printf("Goodbye!\n");
 
     return 0;
 }

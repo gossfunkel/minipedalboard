@@ -4,6 +4,14 @@
 #include <string.h>
 #include <stdlib.h>
 
+static ma_node_vtable ma_distort_node_vtable = {
+    ma_distort_node_process_pcm_frames,
+    NULL,
+    1, // input bus
+    1, // output bus
+    0  // default flags
+};
+
 //#define NUM_MODES 3
 /* builtin modes include
  *  - hard digital clip (sharp)

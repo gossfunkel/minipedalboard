@@ -44,11 +44,3 @@ void ma_repitch_node_set_parameter(ma_repitch_node *pRepitch, float value);
 float ma_repitch_node_get_parameter(const ma_repitch_node *pRepitch);
 void ma_repitch_node_set_wet_dry(ma_repitch_node *pRepitch, float value);
 float ma_repitch_node_get_wet_dry(const ma_repitch_node *pRepitch);
-
-static ma_node_vtable ma_repitch_node_vtable = {
-    ma_repitch_node_process_pcm_frames,
-    NULL,
-    1, // input bus
-    1, // output bus
-    0  // default flags
-};
