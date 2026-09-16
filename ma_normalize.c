@@ -78,7 +78,7 @@ ma_result ma_normalize_process_pcm_frames(
         	}
         	pNormalize->current_gain = 
         		fmax(1.f, fmin(1.f/pNormalize->peak_level, pNormalize->config.max_amp));
-        	pNormalize->current_gain = (pNormalize->time_on > 0.f) 		?
+        	pNormalize->current_gain = (pNormalize->time_on > 0.f) 	?
         		1.f + 		 fmin(pNormalize->time_on  / .1f, 1.f) 
         					   * (pNormalize->current_gain  - 1.f) 	:
         		1.f + (1.f - fmin(pNormalize->time_off / .1f, 1.f)) 
