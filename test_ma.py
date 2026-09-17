@@ -1,15 +1,20 @@
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase import Audio3DManager
-from panda3d.core import Vec3, CollisionTraverser
+from panda3d.core import Vec3, CollisionTraverser, load_prc_file_data
 import numpy as np
+
+load_prc_file_data('', "show-frame-rate-meter true")
+
+RADIUS = 5.
 
 if __name__ == '__main__':
     ShowBase()
     
     ball = loader.loadModel("models/smiley")
-    ball.setPos(0.,1.,0.)
+    ball.reparentTo(base.render)
+    ball.setPos(0.,RADIUS,0.)
 
-    ball_vel = Vec3(0., 1., 0.)
+    #ball_vel = Vec3(0., RADIUS, 0.)
 
     audio3d = Audio3DManager.Audio3DManager(base.sfxManagerList[0], camera)
 
@@ -28,8 +33,12 @@ if __name__ == '__main__':
     print(base.sfxManagerList[0])
 
     def update_ball(task):
-        ball_vel = Vec3(np.sin(task.frame), np.cos(task.frame), 0.)
-        ball.setPos(ball.getPos() + ball_vel)
+        #ball_vel = Vec3(np.cos(task.frame/50.)*RADIUS, -np.sin(task.frame/50.)*RADIUS, 0.)
+        #print(f"Ball velocity: {ball_vel}")
+        #ball.setPos(ball.getPos() + ball_vel)
+        #ball.setPos(Vec3(np.sin(task.frame/50.)*RADIUS, np.cos(task.frame/50.)*RADIUS, 0.))
+        ball.setPos(Vec3(np.sin(task.frame/50.)*2., RADIUS, 0.))
+        return task.cont
 
     base.taskMgr.add(update_ball, "update_ball")
 
