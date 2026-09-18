@@ -53,7 +53,8 @@ int main() {
     printf(".\n");
 
 	while (!shouldClose) {
-		printf("\33[2K\r");
+		//printf("\33[2K\r");
+		printf("\r");
 		for (size_t iChannel = 0; iChannel < CHANNELS; iChannel++)
 			printf("Channel %llu peak: %f, RMS: %f.", iChannel,
 				level_node.levelMeter.pData[iChannel]->peak, 
