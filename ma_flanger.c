@@ -108,7 +108,7 @@ ma_result ma_flanger_process_pcm_frames (
 
 
     for (ma_uint32 iFrame = 0; iFrame < frameCount; iFrame++) {
-        for (ma_uint32 iChannel = 0; iChannel < channels; ++iChannel) {
+        for (ma_uint32 iChannel = 0; iChannel < channels; iChannel++) {
             pFramesOutF32[iChannel] = 
                 pFlanger->pBuffer[pFlanger->cursor * channels + iChannel] * pFlanger->config.dryWet
                 + pFramesInF32[iChannel];// * wetDry;

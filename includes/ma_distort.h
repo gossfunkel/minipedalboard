@@ -8,6 +8,8 @@
 #define DISTORT_MODE_TANH 1
 #define DISTORT_MODE_SIN 2
 
+// EFFECT:
+
 typedef struct {
     ma_uint32 channels;
     ma_uint32 sampleRate;
@@ -19,19 +21,9 @@ typedef struct {
 } ma_distort_config;
 
 typedef struct {
-    ma_node_config nodeConfig;
-    ma_distort_config distort;
-} ma_distort_node_config;
-
-typedef struct {
     ma_distort_config config;
     float (*transfer_fn)(float, float, float);
 } ma_distort;
-
-typedef struct {
-    ma_node_base baseNode;
-    ma_distort distort;
-} ma_distort_node;
 
 ma_distort_config ma_distort_config_init(
     ma_uint32 channels,
@@ -42,18 +34,34 @@ ma_distort_config ma_distort_config_init(
     float bias,
     float wetDry
 );
+
 ma_result ma_distort_init(
     const ma_distort_config *pConfig, 
     const ma_allocation_callbacks *pAllocationCallbacks, 
     ma_distort *pDistort
 );
+
 void ma_distort_uninit(ma_distort *pDistort, const ma_allocation_callbacks *pAllocationCallbacks);
+
 ma_result ma_distort_process_pcm_frames(
     ma_distort *pDistort,
     void *pFramesOut,
     const void *pFramesIn,
     ma_uint32 frameCount
 );
+
+// NODE:
+
+typedef struct {
+    ma_node_config nodeConfig;
+    ma_distort_config distort;
+} ma_distort_node_config;
+
+typedef struct {
+    ma_node_base baseNode;
+    ma_distort distort;
+} ma_distort_node;
+
 ma_distort_node_config ma_distort_node_config_init(
     ma_uint32 channels,
     ma_uint32 sampleRate,
@@ -63,13 +71,16 @@ ma_distort_node_config ma_distort_node_config_init(
     float bias,
     float wetDry
 );
+
 ma_result ma_distort_node_init(
     ma_node_graph *pNodeGraph, 
     const ma_distort_node_config *pConfig, 
     const ma_allocation_callbacks *pAllocationCallbacks, 
     ma_distort_node *pDistortNode
 );
+
 void ma_distort_node_uninit(ma_distort_node *pDistortNode, const ma_allocation_callbacks *pAllocationCallbacks);
+
 void ma_distort_node_process_pcm_frames(
     ma_node *pNode,
     const float **ppFramesIn,
@@ -77,6 +88,8 @@ void ma_distort_node_process_pcm_frames(
     float **ppFramesOut,
     ma_uint32 *pFrameCountOut
 );
+
+// GETTERS/SETTERS:
 
 void ma_distort_set_drive(ma_distort *pDistort, float value);
 float ma_distort_get_drive(const ma_distort *pDistort);

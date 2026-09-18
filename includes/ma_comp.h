@@ -6,6 +6,8 @@
 #define MAX_ATTACK 1.f
 #define MAX_RELEASE 2.f
 
+// EFFECT:
+
 /*
 typedef struct {
 } ma_compress_config;
@@ -38,6 +40,8 @@ ma_result ma_compress_process_pcm_frames(
     ma_uint32 frameCount
 );
 */
+
+// NODE:
 
 typedef struct {
     ma_node_config nodeConfig;
@@ -81,6 +85,8 @@ void ma_compress_node_process_pcm_frames(
     float **ppFramesOut,
     ma_uint32 *pFrameCountOut
 );
+
+// GETTERS/SETTERS:
 
 void ma_compress_node_set_threshold(ma_compress_node *pCompress, float value);
 float ma_compress_node_get_threshold(const ma_compress_node *pCompress);

@@ -6,6 +6,8 @@
 #define MIN_RATE 0.01f
 #define MAX_RATE 5.f
 
+// EFFECT:
+
 typedef struct {
     ma_uint32 channels;
     ma_uint32 sampleRate;
@@ -23,6 +25,25 @@ typedef struct {
     float *pBuffer;
 } ma_flanger;
 
+ma_flanger_config ma_flanger_config_init(ma_uint32 channels, ma_uint32 sampleRate, float rate, float depth, float dryWet);
+
+ma_result ma_flanger_init(
+    const ma_flanger_config *pConfig, 
+    const ma_allocation_callbacks *pAllocationCallbacks, 
+    ma_flanger *pFlanger
+);
+
+void ma_flanger_uninit(ma_flanger *pFlanger, const ma_allocation_callbacks *pAllocationCallbacks);
+
+ma_result ma_flanger_process_pcm_frames(
+    ma_flanger *pFlanger,
+    void *pFramesOut,
+    const void *pFramesIn,
+    ma_uint32 frameCount
+);
+
+// NODE:
+
 typedef struct {
     ma_node_config nodeConfig;
     ma_flanger_config flangerConfig;
@@ -33,28 +54,17 @@ typedef struct {
     ma_flanger flanger;
 } ma_flanger_node;
 
-ma_flanger_config ma_flanger_config_init(ma_uint32 channels, ma_uint32 sampleRate, float rate, float depth, float dryWet);
-ma_result ma_flanger_init(
-    const ma_flanger_config *pConfig, 
-    const ma_allocation_callbacks *pAllocationCallbacks, 
-    ma_flanger *pFlanger
-);
-void ma_flanger_uninit(ma_flanger *pFlanger, const ma_allocation_callbacks *pAllocationCallbacks);
-ma_result ma_flanger_process_pcm_frames(
-    ma_flanger *pFlanger,
-    void *pFramesOut,
-    const void *pFramesIn,
-    ma_uint32 frameCount
-);
-
 ma_flanger_node_config ma_flanger_node_config_init(ma_uint32 channels, ma_uint32 sampleRate, float rate, float depth, float dryWet);
+
 ma_result ma_flanger_node_init(
     ma_node_graph *pNodeGraph, 
     const ma_flanger_node_config *pConfig, 
     const ma_allocation_callbacks *pAllocationCallbacks, 
     ma_flanger_node *pFlangerNode
 );
+
 void ma_flanger_node_uninit(ma_flanger_node *pFlangerNode, const ma_allocation_callbacks *pAllocationCallbacks);
+
 void ma_flanger_node_process_pcm_frames(
     ma_node *pNode,
     const float **ppFramesIn,
@@ -62,6 +72,8 @@ void ma_flanger_node_process_pcm_frames(
     float **ppFramesOut,
     ma_uint32 *pFrameCountOut
 );
+
+// GETTERS/SETTERS:
 
 void ma_flanger_set_rate(ma_flanger *pFlanger, float value);
 float ma_flanger_get_rate(const ma_flanger *pFlanger);
