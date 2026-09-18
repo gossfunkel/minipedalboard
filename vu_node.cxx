@@ -26,6 +26,7 @@ class VU_Node {
 	std::vector<Box> bars  = {};
 	std::vector<Box> lines = {};
 public:
+	// TODO can i just get the engine and group from the MiniAudioManager?
 	VU_Node(ma_engine *eng, ma_node *grp, LVecBase2 pos, float w = 25.f, float h = 100.f) : 
 			   engine {eng}, sound_group {grp}, position {pos}, width {w}, height {h} {
 		size_t channels = sound_group->config.channels;
