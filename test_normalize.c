@@ -30,9 +30,9 @@ int main() {
         return 2;
     }
 
-    ma_normalize_node_config dist_conf = ma_normalize_node_config_init(CHANNELS, SAMPLERATE, .4f, .2f, 10.f);
+    ma_normalize_node_config norm_conf = ma_normalize_node_config_init(CHANNELS, SAMPLERATE, .4f, .2f, 10.f);
 
-    if ((result = ma_normalize_node_init(&engine.nodeGraph, &dist_conf, NULL, &norm_node)) != MA_SUCCESS) {
+    if ((result = ma_normalize_node_init(&engine.nodeGraph, &norm_conf, NULL, &norm_node)) != MA_SUCCESS) {
         if (result == MA_INVALID_ARGS) {
             fprintf(stderr, "Normalizer node initialised with incorrect values!\n");
             return 3;

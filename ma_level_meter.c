@@ -49,6 +49,8 @@ ma_result ma_level_meter_process_pcm_frames (
     ma_uint32 channels = pLevelMeter->config.channels;
 
     float sum_sq[channels] = {};
+    for (ma_uint32 iChannel = 0; iChannel < channels; iChannel++) 
+    	pLevelMeter->pData[iChannel]->peak = 0.f;
 
     for (ma_uint32 iFrame = 0; iFrame < frameCount; iFrame++) {
         for (ma_uint32 iChannel = 0; iChannel < channels; iChannel++) {
@@ -57,6 +59,7 @@ ma_result ma_level_meter_process_pcm_frames (
         	pFramesOutF32[iChannel] = pFramesInF32[iChannel];
         }
         pFramesInF32 += channels;
+        pFramesOutF32 += channels;
     }
     for (ma_uint32 iChannel = 0; iChannel < channels; iChannel++) {
     	pLevelMeter->pData[iChannel]->rms = sqrt(sum_sq[iChannel] / (float)frameCount);

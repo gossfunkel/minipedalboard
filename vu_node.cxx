@@ -3,40 +3,84 @@
 #include "levelMeter.h"
 
 /*
- * Probably separate peak meter from UI:
- * - miniaudio node to find peak and RMS or LUFS and save to a public field
- * - panda node to read from public field and change meter appearance
+ * - miniaudio node finds peak and RMS values for each channel,
+ 		 and writes to a public field in a ma_level_data
+ * - panda node reads from ma_level_meter_node and changes meter
+ 		 appearance to display levels
  */
 
+typedef struct {
+	LVecBase2 pos;
+	float w;
+	float h;
+} Box;
+
 class VU_Node {
-	LVecBase2 position = {};
-	ma_level_meter level_meter = 
-	int channels = {};
-	std::vector</*bar*/> bars = {};
-	std::vector</*line*/> lines = {};
+	LVecBase2 position;
+	float width    = {0.f};
+	float height   = {0.f};
+	float bar_base = {0.f};
+	ma_engine *engine;
+	ma_node *sound_group;
+	ma_level_meter level_meter = {};
+	std::vector<Box> bars  = {};
+	std::vector<Box> lines = {};
 public:
-	VU_Node(int ch, LVecBase2 pos, float w, float h) : 
-			channels {ch}, position {pos}, width {w}, height {h} {
-		for (auto)
+	VU_Node(ma_engine *eng, ma_node *grp, LVecBase2 pos, float w = 25.f, float h = 100.f) : 
+			   engine {eng}, sound_group {grp}, position {pos}, width {w}, height {h} {
+		size_t channels = sound_group->config.channels;
+		float barWidth = ((width-5.f)/channels) - .1f;
+		// temporary value for near bottom of frame
+		pos.y += height - .1f;
+		bar_base = pos.y;
+		for (size_t iChannel = 0; iChannel < channels; ++iChannel) {
+			pos.x += barWidth;
+			bars.emplace_back(Box{pos, barWidth, 0.f});
+			lines.emplace_back(Box{pos, barWidth, 0.1f});
+		}
+		// connect level meter node to group and graph endpoint
+		ma_result result;
+	    ma_level_meter_node_config meter_conf = ma_level_meter_node_config_init(CHANNELS, SAMPLERATE);
+	    if ((result = ma_level_meter_node_init(&engine->nodeGraph, &meter_conf, NULL, level_meter)) != MA_SUCCESS) {
+	        if (result == MA_INVALID_ARGS) {
+	            fprintf(stderr, "Level meter node initialised with incorrect values!\n");
+	            return;
+	        }
+	        fprintf(stderr, "Failed to initialise level meter node! Error: %d\n", result);
+	        return;
+	    }
+	    if ((result = ma_node_attach_output_bus(sound_group, 0, level_meter, 0)) != MA_SUCCESS) {
+	        fprintf(stderr, "Failed to attach sound group to level meter node! Error: %d\n", result);
+	        return;
+	    }
+	    if ((result = ma_node_attach_output_bus(level_meter, 0, ma_node_graph_get_endpoint(&engine->nodeGraph), 0)) != MA_SUCCESS) {
+	        fprintf(stderr, "Failed to attach level meter node to graph endpoint! Error: %d\n", result);
+	        return;
+	    }
 	}
 
 	~VU_Node() {
-
+		// disconnect level meter node from group and graph endpoint
+        if (ma_node_attach_output_bus(sound_group, 0, ma_node_graph_get_endpoint(&engine->nodeGraph), 0) != MA_SUCCESS) {
+            fprintf(stderr, "Failed to toggle node connection!\n");
+        }
+		ma_level_meter_node_uninit(level_meter);
 	}
 
 	void enable() {
-
+		// TODO add to task manager
 	}
 
 	void disable() {
-
+		// TODO remove from task manager
 	}
 
 	void update() {
 		for (size_t ch = 0; ch < this->channels; ++ch) {
-			// FIXME resize bars/lines to LUFS and line to max peak
-			this->lines.at(ch).set_position(this->position.x, this->level_meter[ch].peak);
-			this->bars.at(ch).set_height(this->level_meter[ch].lufs);
+			// TODO resize bars/lines to LUFS-scaled values?
+			this->lines.at(ch).pos.y = this->bar_base - 
+									   this->height * this->level_meter.pData[ch]->peak;
+			this->bars.at(ch).height = this->height * this->level_meter.pData[ch]->rms;
 		}
 	}
 
@@ -53,9 +97,9 @@ public:
 		this->height = height;
 	}
 
-	void set_scale(std::pair<float, float> scale) {
-		this->width = scale.first;
-		this->height = scale.second;
+	void set_scale(LVecBase2 scale) {
+		this->width = scale.x;
+		this->height = scale.y;
 	}
 
 	float get_width() const {
@@ -66,8 +110,8 @@ public:
 		return this->height;
 	}
 
-	std::pair<float, float> get_scale() const {
-		return std::pair<float, float> {this->width, this->height};
+	LVecBase2 get_scale() const {
+		return LVecBase2{this->width, this->height};
 	}
 
 	void set_position(LVecBase2 pos) {

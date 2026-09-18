@@ -21,9 +21,9 @@ int main() {
         return 2;
     }
 
-    ma_level_meter_node_config dist_conf = ma_level_meter_node_config_init(CHANNELS, SAMPLERATE);
+    ma_level_meter_node_config level_meter_conf = ma_level_meter_node_config_init(CHANNELS, SAMPLERATE);
 
-    if ((result = ma_level_meter_node_init(&engine.nodeGraph, &dist_conf, NULL, &level_node)) != MA_SUCCESS) {
+    if ((result = ma_level_meter_node_init(&engine.nodeGraph, &level_meter_conf, NULL, &level_node)) != MA_SUCCESS) {
         if (result == MA_INVALID_ARGS) {
             fprintf(stderr, "Level meter node initialised with incorrect values!\n");
             return 3;
