@@ -13,9 +13,9 @@ typedef struct {
 } ma_level_meter_config;
 
 typedef struct {
-    ma_flanger_config config;
+    ma_level_meter_config config;
     ma_uint32 cursor;
-    ma_level_data *pData[];
+    ma_level_data **pData;
 } ma_level_meter;
 
 ma_level_meter_config ma_level_meter_config_init(ma_uint32 channels, ma_uint32 sampleRate);

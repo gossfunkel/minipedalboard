@@ -47,13 +47,17 @@ int main() {
 
     //bool meter_bypassed = false;
     bool shouldClose = false;
-    char inLine[64];
+    //char inLine[64];
 
-    printf("Initialised. Type '?' for commands.\n");
+    printf("Initialised.\n");
+    printf(".\n");
 
 	while (!shouldClose) {
-		printf("Peak: %f, RMS: %f.\n", peakval, rmsval);
 		printf("\33[2K\r");
+		for (size_t iChannel = 0; iChannel < CHANNELS; iChannel++)
+			printf("Channel %llu peak: %f, RMS: %f.", iChannel,
+				level_node.levelMeter.pData[iChannel]->peak, 
+				level_node.levelMeter.pData[iChannel]->rms);
 	}
 
     ma_sound_uninit(&sound);

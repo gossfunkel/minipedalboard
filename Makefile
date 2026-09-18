@@ -1,7 +1,7 @@
 CFLAGS := -std=c99 -Iincludes -Wall -msse2 -mavx2 -lm
 CC := gcc
 
-all: miniaudio compress distort flanger norm
+all: miniaudio compress distort flanger norm level
 
 miniaudio:
 	$(CC) -c miniaudio.c $(CFLAGS) -o miniaudio.o
@@ -26,6 +26,10 @@ repitch: miniaudio
 	$(CC) -c ma_repitch.c $(CFLAGS) -o ma_repitch.o
 	$(CC) test_repitch.c miniaudio.o ma_repitch.o $(CFLAGS) -o test_repitch.exe
 
+level: miniaudio
+	$(CC) -c ma_level_meter.c $(CFLAGS) -o ma_level_meter.o
+	$(CC) test_level_meter.c miniaudio.o ma_level_meter.o $(CFLAGS) -o test_level.exe
+
 clean:
 	rm miniaudio.o
 	rm ma_comp.o
@@ -33,8 +37,10 @@ clean:
 	rm ma_flanger.o
 	rm ma_normalize.o
 	rm ma_repitch.o
+	rm ma_level_meter.o
 	rm test_comp.exe
 	rm test_distort.exe
 	rm test_flanger.exe
 	rm test_norm.exe
 	rm test_repitch.exe
+	rm test_level.exe
