@@ -1,4 +1,4 @@
-CFLAGS := -std=c99 -Iincludes -Wall -msse2 -mavx2 -lm
+CFLAGS := -std=c99 -O2 -Iincludes -Wall -msse2 -mavx2 -lm
 CC := gcc
 
 all: miniaudio compress distort flanger norm level
