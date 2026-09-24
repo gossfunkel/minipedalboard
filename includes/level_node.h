@@ -1,17 +1,41 @@
+/**
+ * PANDA 3D SOFTWARE
+ * Copyright (c) Carnegie Mellon University.  All rights reserved.
+ *
+ * All use of this software is subject to the terms of the revised BSD
+ * license.  You should have received a copy of this license along
+ * with this source code in a file named "LICENSE."
+ *
+ * @file frameRateMeter.I
+ * @author drose
+ * @date 2003-12-23
+ * 
+ * @file levelNode.I
+ * @author katie
+ * @date 2026-09-23
+ */
+
 #ifndef LEVEL_METER_H
 #define LEVEL_METER_H
 
 #include "pandaNode.h"
 #include "lvecBase2.h"
+#include "camera.h"
+#include "displayRegion.h"
+#include "orthographicLens.h"
+#include "clockObject.h"
+#include "depthTestAttrib.h"
+#include "depthWriteAttrib.h"
+#include "nodePath.h"
+#include "graphicsOutput.h"
+#include "pointerTo.h"
+#include "cardMaker.h"
 #include "levelMeter.h"
 
-typedef struct {
-	LVecBase2 pos;
-	float w;
-	float h;
-} Box;
+class GraphicsChannel;
+class ClockObject;
 
-typedef std::pair<Box, Box> LevelDisplay;
+typedef std::pair<PT(PandaNode), PT(PandaNode)> LevelDisplay;
 
 /* Miniaudio node finds peak and RMS values for each channel,
  	and writes to a public field in a ma_level_data. Panda node 
@@ -19,6 +43,7 @@ typedef std::pair<Box, Box> LevelDisplay;
  	to display levels.
  */
 class LevelMeter : public PandaNode {
+protected:
 	LVecBase2 _position;
 	float _width;
 	float _height;
@@ -48,8 +73,10 @@ PUBLISHED:
 	INLINE GraphicsOutput *get_window() const;
 	INLINE DisplayRegion *get_display_region() const;
 
+	/*
 	INLINE void enable();
 	INLINE void disable();
+	*/
 
 	INLINE LVecBase2 get_scale() const;
 	INLINE void set_scale(LVecBase2 scale);
@@ -90,5 +117,7 @@ public:
 private:
   static TypeHandle _type_handle;
 }
+
+#include "level_node.I"
 
 #endif

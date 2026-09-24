@@ -1,19 +1,42 @@
-#include "level_node.h"
+/**
+ * PANDA 3D SOFTWARE
+ * Copyright (c) Carnegie Mellon University.  All rights reserved.
+ *
+ * All use of this software is subject to the terms of the revised BSD
+ * license.  You should have received a copy of this license along
+ * with this source code in a file named "LICENSE."
+ *
+ * @file frameRateMeter.I
+ * @author drose
+ * @date 2003-12-23
+ * 
+ * @file levelNode.I
+ * @author katie
+ * @date 2026-09-23
+ */
+
+ #include "level_node.h"
 
 LevelMeter::LevelMeter(MiniAudioManager *mgr, LVecBase2 pos, float w = 25.f, float h = 100.f) : 
 		   _engine {mgr->get_engine()}, _sound_group {mgr->get_all_sounds()}, _position {pos}, 
-		   _width {w}, _height {h} {
+		   _width {w}, _height {-h} {
 	_channels = _sound_group->config.channels;
 	float barWidth = ((_width-5.f)/_channels) - .1f;
 	// temporary value for near bottom of frame
 	pos.y += _height - .1f;
 	_bar_base = pos.y;
+	CardMaker cm = CardMaker();
 	for (size_t iChannel = 0; iChannel < channels; ++iChannel) {
+		_bars.emplace_back(LevelDisplay(cm.generate(), cm.generate()));
 		pos.x += barWidth;
-		_bars.emplace_back(LevelDisplay{
-			Box{pos, barWidth, 0.f},
-			Box{pos, barWidth, 0.1f}
-		});
+		_bars.at(iChannel).first.set_x(pos.x);
+		_bars.at(iChannel).first.set_y(_bar_base);
+		_bars.at(iChannel).first.set_width(barWidth);
+		_bars.at(iChannel).first.set_height(0.f);
+		_bars.at(iChannel).second.set_x(pos.x);
+		_bars.at(iChannel).second.set_y(_bar_base);
+		_bars.at(iChannel).second.set_width(barWidth);
+		_bars.at(iChannel).second.set_height(0.1f);
 	}
 	// connect level meter node to group and graph endpoint
 	ma_result result;
@@ -40,14 +63,14 @@ LevelMeter::LevelMeter(MiniAudioManager *mgr, LVecBase2 pos, float w = 25.f, flo
 	_last_update = 0.0f;
 	_clock_object = ClockObject::get_global_clock();
 
-	set_align(A_right);
+	set_align(A_left);
 	set_card_color(0.0f, 0.0f, 0.0f, 0.4);
 	set_card_as_margin(level_meter_side_margins, level_meter_side_margins, 0.1f, 0.0f);
 }
 
 LevelMeter::~LevelMeter() {
 	// disconnect level meter node from group and graph endpoint
-	disable();
+	//disable();
     if (ma_node_attach_output_bus(_sound_group, 0, ma_node_graph_get_endpoint(&engine->nodeGraph), 0) != MA_SUCCESS) {
         fprintf(stderr, "Failed to toggle node connection!\n");
     }
@@ -85,9 +108,9 @@ void LevelMeter::setup_window(GraphicsOutput *window) {
 
   PT(Lens) lens = new OrthographicLens;
 
-  // We choose these values such that we can place the text against (0, 0).
-  static const PN_stdfloat left = -2.0f;
-  static const PN_stdfloat right = 0.0f;
+  // We choose these values such that we can place the node against (0, 0).
+  static const PN_stdfloat left = 0.0f;
+  static const PN_stdfloat right = -2.0f;
   static const PN_stdfloat bottom = -2.0f;
   static const PN_stdfloat top = 0.0f;
   lens->set_film_size(right - left, top - bottom);
@@ -176,12 +199,13 @@ void LevelMeter::
 do_update(Thread *current_thread) {
 	for (auto& [bar,line] : _bars) {
 		// TODO resize bars/lines to LUFS-scaled values?
-		line.pos.y = _bar_base - 
-					 _height * _level_meter.pData[ch]->peak;
-		bar.height = _height * _level_meter.pData[ch]->rms;
+		line.set_y(_bar_base - 
+					   _height * _level_meter.pData[ch]->peak);
+		bar.set_height(_height * _level_meter.pData[ch]->rms);
 	}
 }
 
+/*
 void LevelMeter::enable() {
 	// TODO add to task manager
 	setup_window(_window);
@@ -191,3 +215,4 @@ void LevelMeter::disable() {
 	// TODO remove from task manager
 	clear_window();
 }
+*/
